@@ -87,15 +87,19 @@ class WakeupLightDevice extends Device {
 
   async poll_once() {
     var tick = this._pollTick;
-    //Fast tier (every pass): detect a firing alarm; skips itself on devices without the event endpoint
+    //Fast tier (every pass): the event stream drives alarm detection and, where supported,
+    //the sunset/relax/bedtime state. Skips itself on devices without the event endpoint.
     await this.updateEvents();
-    //Medium tier (every 2nd pass): sensors and main light state
+    //Medium tier (every 2nd pass): sensors and main light state (one /wulgt call covers
+    //main light, dim, night light and sunrise preview)
     if(tick % 2 === 0) {
       await this.updateSensors();
       await this.updateMainLightState();
     }
-    //Slow tier (every 4th pass): the heavier mode endpoints
-    if(tick % 4 === 0) {
+    //Slow tier: the heavier per-mode endpoints. When the event system works they are only
+    //reconciled occasionally (self-heals any missed event); otherwise they are the state source.
+    var reconcile = (this._eventsSupported === false) ? (tick % 4 === 0) : (tick % 20 === 0);
+    if(reconcile) {
       await this.updateSunsetState();
       await this.updateRelaxBreatheState();
       await this.updateBedtimeTracking();
@@ -279,19 +283,41 @@ class WakeupLightDevice extends Device {
     });
   }
 
+  //Applies a mode state and fires its on/off triggers only on an actual change (shared by the
+  //per-endpoint polls and the event stream, so either source updates state the same way)
+  _setSunsetState(active)
+  {
+    var prev = this.getCapabilityValue('sunset');
+    this.setCapabilityValue('sunset', active);
+    if(prev !== null && prev !== undefined && prev !== active) {
+      if(active)
+        this._sunsetOnTrigger.trigger(this).catch(e => { this.log('Error on firing sunset_true: '+e); });
+      else
+        this._sunsetOffTrigger.trigger(this).catch(e => { this.log('Error on firing sunset_false: '+e); });
+    }
+  }
+
+  _setRelaxState(active)
+  {
+    var prev = this.getCapabilityValue('relax_breathe');
+    this.setCapabilityValue('relax_breathe', active);
+    if(prev !== null && prev !== undefined && prev !== active) {
+      if(active)
+        this._relaxOnTrigger.trigger(this).catch(e => { this.log('Error on firing relax_breathe_true: '+e); });
+      else
+        this._relaxOffTrigger.trigger(this).catch(e => { this.log('Error on firing relax_breathe_false: '+e); });
+    }
+  }
+
+  _setBedtimeState(active)
+  {
+    this.setCapabilityValue('bedtime_tracking', active);
+  }
+
   async updateSunsetState()
   {
     return somneoapi.getSunsetSettings(this.getStoreValue('address')).then(sunsetdata => {
-      var active = sunsetdata.onoff;
-      var prev = this.getCapabilityValue('sunset');
-      this.setCapabilityValue('sunset', active);
-      //Only fire on an actual change, not on the first poll after (re)start
-      if(prev !== null && prev !== undefined && prev !== active) {
-        if(active)
-          this._sunsetOnTrigger.trigger(this).catch(e => { this.log('Error on firing sunset_true: '+e); });
-        else
-          this._sunsetOffTrigger.trigger(this).catch(e => { this.log('Error on firing sunset_false: '+e); });
-      }
+      this._setSunsetState(sunsetdata.onoff);
     }).catch(e => {
       this.log('Error on retrieving Sunset status: '+e);
     });
@@ -300,16 +326,7 @@ class WakeupLightDevice extends Device {
   async updateRelaxBreatheState()
   {
     return somneoapi.getRelaxBreatheSettings(this.getStoreValue('address')).then(relaxdata => {
-      var active = relaxdata.onoff;
-      var prev = this.getCapabilityValue('relax_breathe');
-      this.setCapabilityValue('relax_breathe', active);
-      //Only fire on an actual change, not on the first poll after (re)start
-      if(prev !== null && prev !== undefined && prev !== active) {
-        if(active)
-          this._relaxOnTrigger.trigger(this).catch(e => { this.log('Error on firing relax_breathe_true: '+e); });
-        else
-          this._relaxOffTrigger.trigger(this).catch(e => { this.log('Error on firing relax_breathe_false: '+e); });
-      }
+      this._setRelaxState(relaxdata.onoff);
     }).catch(e => {
       this.log('Error on retrieving Relax breathe status: '+e);
     });
@@ -318,7 +335,7 @@ class WakeupLightDevice extends Device {
   async updateBedtimeTracking()
   {
     return somneoapi.getBedtimeTracking(this.getStoreValue('address')).then(bedtimedata => {
-      this.setCapabilityValue('bedtime_tracking', bedtimedata.night);
+      this._setBedtimeState(bedtimedata.night);
     }).catch(e => {
       this.log('Error on retrieving Sleep tracking status: '+e);
     });
@@ -339,22 +356,35 @@ class WakeupLightDevice extends Device {
       }
       if(event !== this._lastEvent) {
         this._lastEvent = event;
-        //'startwakeup' is sent the moment an alarm starts the wake-up sequence
-        if(event === 'startwakeup') {
-          this.log('An alarm went off, firing the alarm trigger');
-          this._alarmTriggeredCard.trigger(this).catch(e => {
-            this.log('Error on firing alarm trigger: '+e);
-          });
-        }
+        this._handleEvent(event);
       }
     }).catch(e => {
       this._eventFailures = (this._eventFailures || 0) + 1;
       this.log('Error on retrieving device events ('+this._eventFailures+'): '+e);
       if(this._eventFailures >= 3) {
         this._eventsSupported = false;
-        this.log('Device does not support the event system, disabling alarm trigger polling');
+        this.log('Device does not support the event system, falling back to per-endpoint polling');
       }
     });
+  }
+
+  //Translates a device event into a state change. While the event system works this replaces the
+  //separate sunset/relax/bedtime polls; the slow tier only reconciles occasionally.
+  _handleEvent(event)
+  {
+    switch(event) {
+      //'startwakeup' is sent the moment an alarm starts the wake-up sequence
+      case 'startwakeup':
+        this.log('An alarm went off, firing the alarm trigger');
+        this._alarmTriggeredCard.trigger(this).catch(e => { this.log('Error on firing alarm trigger: '+e); });
+        break;
+      case 'startdusk': this._setSunsetState(true); break;
+      case 'enddusk': this._setSunsetState(false); break;
+      case 'startrelax': this._setRelaxState(true); break;
+      case 'endrelax': this._setRelaxState(false); break;
+      case 'go2bed': this._setBedtimeState(true); break;
+      case 'endbed': this._setBedtimeState(false); break;
+    }
   }
 
   async updateTimerState()
