@@ -65,56 +65,46 @@ class WakeupLightDevice extends Device {
 
 
   start_update_loops() {
-    this.update_loop_sensors();
-    this.update_loop_mainlight();
-    this.update_loop_bedtime();
-    this.update_loop_events();
-    this.update_loop_sunset();
-    this.update_loop_relax();
-    //this.update_loop_timers();
-    this.refreshState();
+    this._polling = true;
+    this._pollTick = 0;
+    this._pollBaseInterval = 15000;
+    this.poll_loop();
   }
-  update_loop_sensors() {
-    let interval = 30000;
-    this._timerSensors = setInterval(() => {
-        this.updateSensors();
-    }, interval);
+
+  //Single self-paced poll loop. Each pass runs its requests sequentially and only reschedules
+  //after it finishes, so a slow Somneo can never cause overlapping polls to pile up. All device
+  //I/O is additionally serialized and spaced by the request queue in the api module.
+  async poll_loop() {
+    while(this._polling) {
+      try {
+        await this.poll_once();
+      } catch(e) {
+        this.log('Error in poll loop: '+e);
+      }
+      await this.sleep(this._pollBaseInterval);
+    }
   }
-  update_loop_mainlight() {
-    let interval = 31000;
-    this._timerLight = setInterval(() => {
-        this.updateMainLightState();
-    }, interval);
+
+  async poll_once() {
+    var tick = this._pollTick;
+    //Fast tier (every pass): detect a firing alarm; skips itself on devices without the event endpoint
+    await this.updateEvents();
+    //Medium tier (every 2nd pass): sensors and main light state
+    if(tick % 2 === 0) {
+      await this.updateSensors();
+      await this.updateMainLightState();
+    }
+    //Slow tier (every 4th pass): the heavier mode endpoints
+    if(tick % 4 === 0) {
+      await this.updateSunsetState();
+      await this.updateRelaxBreatheState();
+      await this.updateBedtimeTracking();
+    }
+    this._pollTick = (tick + 1) % 1000;
   }
-  update_loop_bedtime() {
-    let interval = 32000;
-    this._timerBedtime = setInterval(() => {
-        this.updateBedtimeTracking();
-    }, interval);
-  }
-  update_loop_events() {
-    let interval = 20000;
-    this._timerEvents = setInterval(() => {
-        this.updateEvents();
-    }, interval);
-  }
-  update_loop_sunset() {
-    let interval = 33000;
-    this._timerSunset = setInterval(() => {
-        this.updateSunsetState();
-    }, interval);
-  }
-  update_loop_relax() {
-    let interval = 34000;
-    this._timerRelax = setInterval(() => {
-        this.updateRelaxBreatheState();
-    }, interval);
-  }
-  update_loop_timers() {
-    let interval = 60000;
-    this._timerTimers = setInterval(() => {
-        this.updateTimerState();
-    }, interval);
+
+  sleep(ms) {
+    return new Promise(resolve => { this._pollTimeout = setTimeout(resolve, ms); });
   }
 
   async refreshState()
@@ -131,7 +121,7 @@ class WakeupLightDevice extends Device {
 
   async updateSensors()
   {
-    somneoapi.getSensors(this.getStoreValue('address')).then(sensordata => {
+    return somneoapi.getSensors(this.getStoreValue('address')).then(sensordata => {
         //this.log(JSON.stringify(sensordata))
         this.setCapabilityValue('measure_humidity', sensordata.msrhu);
         this.setCapabilityValue('measure_luminance', sensordata.mslux);
@@ -270,7 +260,7 @@ class WakeupLightDevice extends Device {
 
   async updateMainLightState()
   {
-    somneoapi.getMainLightState(this.getStoreValue('address')).then(lightstatedata => {
+    return somneoapi.getMainLightState(this.getStoreValue('address')).then(lightstatedata => {
       //this.log(JSON.stringify(lightstatedata))
       this.setCapabilityValue('onoff', lightstatedata.onoff);
       this.setCapabilityValue('dim', (lightstatedata.ltlvl/25));
@@ -291,7 +281,7 @@ class WakeupLightDevice extends Device {
 
   async updateSunsetState()
   {
-    somneoapi.getSunsetSettings(this.getStoreValue('address')).then(sunsetdata => {
+    return somneoapi.getSunsetSettings(this.getStoreValue('address')).then(sunsetdata => {
       var active = sunsetdata.onoff;
       var prev = this.getCapabilityValue('sunset');
       this.setCapabilityValue('sunset', active);
@@ -309,7 +299,7 @@ class WakeupLightDevice extends Device {
 
   async updateRelaxBreatheState()
   {
-    somneoapi.getRelaxBreatheSettings(this.getStoreValue('address')).then(relaxdata => {
+    return somneoapi.getRelaxBreatheSettings(this.getStoreValue('address')).then(relaxdata => {
       var active = relaxdata.onoff;
       var prev = this.getCapabilityValue('relax_breathe');
       this.setCapabilityValue('relax_breathe', active);
@@ -327,7 +317,7 @@ class WakeupLightDevice extends Device {
 
   async updateBedtimeTracking()
   {
-    somneoapi.getBedtimeTracking(this.getStoreValue('address')).then(bedtimedata => {
+    return somneoapi.getBedtimeTracking(this.getStoreValue('address')).then(bedtimedata => {
       this.setCapabilityValue('bedtime_tracking', bedtimedata.night);
     }).catch(e => {
       this.log('Error on retrieving Sleep tracking status: '+e);
@@ -339,7 +329,7 @@ class WakeupLightDevice extends Device {
     //Older Somneo devices do not expose the event endpoint, stop polling once we are sure
     if(this._eventsSupported === false)
       return;
-    somneoapi.getLastEvent(this.getStoreValue('address')).then(eventdata => {
+    return somneoapi.getLastEvent(this.getStoreValue('address')).then(eventdata => {
       this._eventFailures = 0;
       var event = eventdata.event;
       //On the first poll we only store a baseline, so we do not fire on app/device restart
@@ -422,12 +412,8 @@ class WakeupLightDevice extends Device {
 
   async onDeleted() {
     this.log('Wakeup-Light: '+this.getName()+' - has been deleted');
-    if(this._timerSensors) clearInterval(this._timerSensors);
-    if(this._timerLight) clearInterval(this._timerLight);
-    if(this._timerBedtime) clearInterval(this._timerBedtime);
-    if(this._timerEvents) clearInterval(this._timerEvents);
-    if(this._timerSunset) clearInterval(this._timerSunset);
-    if(this._timerRelax) clearInterval(this._timerRelax);
+    this._polling = false;
+    if(this._pollTimeout) clearTimeout(this._pollTimeout);
   }
 
   onDiscoveryResult(discoveryResult) {
