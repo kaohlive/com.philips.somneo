@@ -48,6 +48,26 @@
           "en": "When the nightlight has been turned on"
         },
         "$filter": "capabilities=nightlight"
+      },
+      {
+        "id": "sunrise_preview_false",
+        "title": {
+          "en": "The sunrise preview is deactivated"
+        },
+        "hint": {
+          "en": "When the sunrise preview has been turned off"
+        },
+        "$filter": "capabilities=sunrise_preview"
+      },
+      {
+        "id": "sunrise_preview_true",
+        "title": {
+          "en": "The sunrise preview is activated"
+        },
+        "hint": {
+          "en": "When the sunrise preview has been turned on"
+        },
+        "$filter": "capabilities=sunrise_preview"
       }
     ],
     "actions": [
@@ -88,6 +108,31 @@
               "en": "Turns the nightlight on or off: [[mode]]"
             },
             "$filter": "capabilities=nightlight",
+            "args": [
+              {
+                "type": "checkbox",
+                "name": "mode",
+                "title": {
+                  "en": "On"
+                },
+                "placeholder": {
+                  "en": "yes"
+                }
+              }
+            ]
+          },
+          {
+            "id": "set-sunrise-preview",
+            "title": {
+              "en": "Start sunrise preview"
+            },
+            "hint": {
+              "en": "Toggles the sunrise preview of the wake-up light"
+            },
+            "titleFormatted": {
+              "en": "Turns the sunrise preview on or off: [[mode]]"
+            },
+            "$filter": "capabilities=sunrise_preview",
             "args": [
               {
                 "type": "checkbox",

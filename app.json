@@ -108,6 +108,38 @@
             "filter": "driver_id=wakeup-light&capabilities=nightlight"
           }
         ]
+      },
+      {
+        "id": "sunrise_preview_false",
+        "title": {
+          "en": "The sunrise preview is deactivated"
+        },
+        "hint": {
+          "en": "When the sunrise preview has been turned off"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light&capabilities=sunrise_preview"
+          }
+        ]
+      },
+      {
+        "id": "sunrise_preview_true",
+        "title": {
+          "en": "The sunrise preview is activated"
+        },
+        "hint": {
+          "en": "When the sunrise preview has been turned on"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light&capabilities=sunrise_preview"
+          }
+        ]
       }
     ],
     "actions": [
@@ -156,6 +188,35 @@
             "type": "device",
             "name": "device",
             "filter": "driver_id=wakeup-light&capabilities=nightlight"
+          },
+          {
+            "type": "checkbox",
+            "name": "mode",
+            "title": {
+              "en": "On"
+            },
+            "placeholder": {
+              "en": "yes"
+            }
+          }
+        ]
+      },
+      {
+        "id": "set-sunrise-preview",
+        "title": {
+          "en": "Start sunrise preview"
+        },
+        "hint": {
+          "en": "Toggles the sunrise preview of the wake-up light"
+        },
+        "titleFormatted": {
+          "en": "Turns the sunrise preview on or off: [[mode]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light&capabilities=sunrise_preview"
           },
           {
             "type": "checkbox",
@@ -272,6 +333,28 @@
               "max": 25
             }
           ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Sunrise preview"
+          },
+          "children": [
+            {
+              "id": "sunrise_color_scheme",
+              "type": "dropdown",
+              "label": {
+                "en": "Color scheme"
+              },
+              "value": "0",
+              "values": [
+                { "id": "0", "label": { "en": "Sunny Day" } },
+                { "id": "1", "label": { "en": "Island Red" } },
+                { "id": "2", "label": { "en": "Nordic White" } },
+                { "id": "3", "label": { "en": "Caribbean Red" } }
+              ]
+            }
+          ]
         }
       ],
       "platforms": [
@@ -317,6 +400,23 @@
       },
       "insightsTitleFalse": {
         "en": "Sleep tracking was turned off"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button",
+      "uiQuickAction": true
+    },
+    "sunrise_preview": {
+      "type": "boolean",
+      "title": {
+        "en": "Sunrise Preview"
+      },
+      "insights": true,
+      "insightsTitleTrue": {
+        "en": "The sunrise preview was activated"
+      },
+      "insightsTitleFalse": {
+        "en": "The sunrise preview was deactivated"
       },
       "getable": true,
       "setable": true,

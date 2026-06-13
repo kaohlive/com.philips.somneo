@@ -1,0 +1,11 @@
+{
+    "type": "boolean",
+    "title": { "en": "Sunrise Preview" },
+    "insights": true,
+    "insightsTitleTrue": { "en": "The sunrise preview was activated"},
+    "insightsTitleFalse": { "en": "The sunrise preview was deactivated"},
+    "getable": true,
+    "setable": true,
+    "uiComponent": "button",
+    "uiQuickAction": true
+  }

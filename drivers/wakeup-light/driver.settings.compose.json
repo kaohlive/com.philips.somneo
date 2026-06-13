@@ -69,5 +69,23 @@
         "max": 25
       }
     ]
+  },
+  {
+    "type": "group",
+    "label": { "en": "Sunrise preview" },
+    "children": [
+      {
+        "id": "sunrise_color_scheme",
+        "type": "dropdown",
+        "label": { "en": "Color scheme" },
+        "value": "0",
+        "values": [
+          { "id": "0", "label": { "en": "Sunny Day" } },
+          { "id": "1", "label": { "en": "Island Red" } },
+          { "id": "2", "label": { "en": "Nordic White" } },
+          { "id": "3", "label": { "en": "Caribbean Red" } }
+        ]
+      }
+    ]
   }
 ]

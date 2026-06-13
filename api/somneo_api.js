@@ -105,6 +105,22 @@ async function getAlarmSchedules(address)
   });
 }
 
+async function putSunrisePreview(address,enabled,colorScheme)
+{
+  console.info('Updating Sunrise preview data')
+  let body = {
+    "onoff": enabled, //turns the light on to show the preview
+    "tempy": enabled, //sunrise preview flag
+    "ctype": parseInt(colorScheme), //sunrise color scheme
+    "ngtlt": false //make sure the night light is off
+  };
+  return new Promise((resolve, reject) => {(
+    putResponseData(address,'wulgt', body)).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
 async function getSunsetSettings(address)
 {
   console.info('Retrieving Sunset settings')
@@ -159,6 +175,7 @@ async function getLastEvent(address)
 }
 
 module.exports.putMainLightState = putMainLightState;
+module.exports.putSunrisePreview = putSunrisePreview;
 module.exports.getSunsetSettings = getSunsetSettings;
 module.exports.putSunsetSettings = putSunsetSettings;
 module.exports.getBedtimeTracking = getBedtimeTracking;

@@ -32,6 +32,8 @@ class WakeupLightDevice extends Device {
       await this.addCapability('sunset');
     if(!this.hasCapability('bedtime_tracking'))
       await this.addCapability('bedtime_tracking');
+    if(!this.hasCapability('sunrise_preview'))
+      await this.addCapability('sunrise_preview');
 
     this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
     this.registerCapabilityListener('dim', this.onCapabilityDim.bind(this));
@@ -40,9 +42,13 @@ class WakeupLightDevice extends Device {
     this.registerCapabilityListener('sunset', this.onCapabilitySunset.bind(this));
     this.setupFlowSunsetMode();
     this.registerCapabilityListener('bedtime_tracking', this.onCapabilityBedtimeTracking.bind(this));
+    this.registerCapabilityListener('sunrise_preview', this.onCapabilitySunrisePreview.bind(this));
+    this.setupFlowSunrisePreviewMode();
     this._alarmTriggeredCard = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
     this._sunsetOnTrigger = this.homey.flow.getDeviceTriggerCard('sunset_true');
     this._sunsetOffTrigger = this.homey.flow.getDeviceTriggerCard('sunset_false');
+    this._sunriseOnTrigger = this.homey.flow.getDeviceTriggerCard('sunrise_preview_true');
+    this._sunriseOffTrigger = this.homey.flow.getDeviceTriggerCard('sunrise_preview_false');
   }
 
   //Reads a setting as an integer, falling back to a default when it is not set yet
@@ -127,6 +133,7 @@ class WakeupLightDevice extends Device {
 	async onCapabilityOnoff( value, opts ) {
     await this.setCapabilityValue('onoff', value);
     await this.setCapabilityValue('nightlight', false);
+    await this.setCapabilityValue('sunrise_preview', false);
     return await this.setMainLightState();
   }
   // this method is called when the Device has requested a state change (dim)
@@ -134,6 +141,22 @@ class WakeupLightDevice extends Device {
     await this.setCapabilityValue('dim', value);
     return await this.setMainLightState();
   }
+  // this method is called when the Device has requested a state change (sunrise preview)
+  async onCapabilitySunrisePreview( value, opts ) {
+    await this.setCapabilityValue('sunrise_preview', value);
+    if(value) {
+      await this.setCapabilityValue('onoff', false);
+      await this.setCapabilityValue('nightlight', false);
+    }
+    var settings = this.getSettings();
+    somneoapi.putSunrisePreview(this.getStoreValue('address'), value, this._num(settings.sunrise_color_scheme, 0)).then(lightstatedata => {
+      this.log(JSON.stringify(lightstatedata))
+    }).catch(e => {
+      this.log('Error on updating Sunrise preview status: '+e);
+      return e;
+    });
+  }
+
   // this method is called when the Device has requested a state change (sunset)
   async onCapabilitySunset( value, opts ) {
     await this.setCapabilityValue('sunset', value);
@@ -172,6 +195,7 @@ class WakeupLightDevice extends Device {
   async onCapabilityNightlight( value, opts ) {
     await this.setCapabilityValue('nightlight', value);
     await this.setCapabilityValue('onoff', false);
+    await this.setCapabilityValue('sunrise_preview', false);
     var dim = 25*this.getCapabilityValue('dim');
     somneoapi.putMainLightState(this.getStoreValue('address'), false, dim, false, value).then(lightstatedata => {
       this.log(JSON.stringify(lightstatedata))
@@ -215,7 +239,16 @@ class WakeupLightDevice extends Device {
       this.setCapabilityValue('onoff', lightstatedata.onoff);
       this.setCapabilityValue('dim', (lightstatedata.ltlvl/25));
       this.setCapabilityValue('nightlight', lightstatedata.ngtlt);
-    }).catch(e => { 
+      var prevSunrise = this.getCapabilityValue('sunrise_preview');
+      this.setCapabilityValue('sunrise_preview', lightstatedata.tempy);
+      //Only fire on an actual change, not on the first poll after (re)start
+      if(prevSunrise !== null && prevSunrise !== undefined && prevSunrise !== lightstatedata.tempy) {
+        if(lightstatedata.tempy)
+          this._sunriseOnTrigger.trigger(this).catch(e => { this.log('Error on firing sunrise_preview_true: '+e); });
+        else
+          this._sunriseOffTrigger.trigger(this).catch(e => { this.log('Error on firing sunrise_preview_false: '+e); });
+      }
+    }).catch(e => {
       this.log('Error on retrieving Light status: '+e);
     });
   }
@@ -355,6 +388,22 @@ class WakeupLightDevice extends Device {
         return new Promise((resolve, reject) => {
           this.log('now send the capability command');
           args.device.onCapabilitySunset(args.start).then(() => {
+            resolve(true);
+          }, (_error) => {
+            reject(_error);
+          });
+        });
+      });
+  }
+
+  async setupFlowSunrisePreviewMode()
+  {
+    this._setSunrisePreviewMode = await this.homey.flow.getActionCard('set-sunrise-preview');
+    this._setSunrisePreviewMode
+      .registerRunListener(async (args, state) => {
+        this.log('attempt to set sunrise preview mode: '+JSON.stringify(args.mode));
+        return new Promise((resolve, reject) => {
+          args.device.onCapabilitySunrisePreview(args.mode).then(() => {
             resolve(true);
           }, (_error) => {
             reject(_error);
