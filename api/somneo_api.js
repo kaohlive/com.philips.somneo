@@ -1,11 +1,16 @@
 'use strict'
 const http = require('http.min');
+const https = require('https');
 
 //The Somneo's embedded webserver is easily overloaded, so every request to a device is run
 //through a per-host queue: at most one request in flight, with a minimum gap between requests
 //and a hard timeout so a hung request can never block the queue.
 const MIN_REQUEST_GAP = 1100;
 const REQUEST_TIMEOUT = 15000;
+
+//Reuse a single keep-alive socket per host instead of opening a new connection per request,
+//which the device's webserver tolerates far better. maxSockets is per-host in Node.
+const keepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 1, rejectUnauthorized: false });
 
 const queues = {};
 
@@ -42,6 +47,7 @@ async function getResponseData(address,path)
     host: address,
     path: '/di/v1/products/1/'+path,
     timeout: REQUEST_TIMEOUT,
+    agent: keepAliveAgent,
     headers: {
       'content-type': 'application/json'
     }
@@ -61,6 +67,7 @@ async function putResponseData(address,path,body)
     host: address,
     path: '/di/v1/products/1/'+path,
     timeout: REQUEST_TIMEOUT,
+    agent: keepAliveAgent,
     headers: {
       'content-type': 'application/json'
     }

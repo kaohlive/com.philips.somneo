@@ -68,7 +68,29 @@ class WakeupLightDevice extends Device {
     this._polling = true;
     this._pollTick = 0;
     this._pollBaseInterval = 15000;
+    this._consecutiveFailures = 0;
     this.poll_loop();
+  }
+
+  //Tracks reachability from the core light poll. After a few failures the device is marked
+  //unavailable and the poll interval backs off so we stop hammering an unreachable device;
+  //the first success restores normal cadence and availability.
+  _reportHealth(ok) {
+    if(ok) {
+      if(this._consecutiveFailures > 0) {
+        this._consecutiveFailures = 0;
+        this._pollBaseInterval = 15000;
+        if(!this.getAvailable())
+          this.setAvailable().catch(() => {});
+      }
+      return;
+    }
+    this._consecutiveFailures = (this._consecutiveFailures || 0) + 1;
+    if(this._consecutiveFailures >= 3) {
+      if(this.getAvailable())
+        this.setUnavailable('Device unreachable').catch(() => {});
+      this._pollBaseInterval = Math.min(this._pollBaseInterval * 2, 120000);
+    }
   }
 
   //Single self-paced poll loop. Each pass runs its requests sequentially and only reschedules
@@ -266,6 +288,7 @@ class WakeupLightDevice extends Device {
   {
     return somneoapi.getMainLightState(this.getStoreValue('address')).then(lightstatedata => {
       //this.log(JSON.stringify(lightstatedata))
+      this._reportHealth(true);
       this.setCapabilityValue('onoff', lightstatedata.onoff);
       this.setCapabilityValue('dim', (lightstatedata.ltlvl/25));
       this.setCapabilityValue('nightlight', lightstatedata.ngtlt);
@@ -279,6 +302,7 @@ class WakeupLightDevice extends Device {
           this._sunriseOffTrigger.trigger(this).catch(e => { this.log('Error on firing sunrise_preview_false: '+e); });
       }
     }).catch(e => {
+      this._reportHealth(false);
       this.log('Error on retrieving Light status: '+e);
     });
   }
