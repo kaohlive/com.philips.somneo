@@ -168,7 +168,20 @@ class WakeupLightDevice extends Device {
   // this method is called when the Device has requested a state change (dim)
   async onCapabilityDim( value, opts ) {
     await this.setCapabilityValue('dim', value);
-    return await this.setMainLightState();
+    //Coalesce rapid slider changes into a single trailing device write
+    this._debounce('mainlight', () => this.setMainLightState(), 400);
+  }
+
+  //Coalesces rapid capability changes (e.g. dragging a slider) into one trailing device write
+  _debounce(key, fn, ms) {
+    if(!this._debounceTimers)
+      this._debounceTimers = {};
+    if(this._debounceTimers[key])
+      clearTimeout(this._debounceTimers[key]);
+    this._debounceTimers[key] = setTimeout(() => {
+      this._debounceTimers[key] = null;
+      fn();
+    }, ms);
   }
   // this method is called when the Device has requested a state change (sunrise preview)
   async onCapabilitySunrisePreview( value, opts ) {
@@ -468,6 +481,11 @@ class WakeupLightDevice extends Device {
     this.log('Wakeup-Light: '+this.getName()+' - has been deleted');
     this._polling = false;
     if(this._pollTimeout) clearTimeout(this._pollTimeout);
+    if(this._debounceTimers) {
+      for(var k in this._debounceTimers) {
+        if(this._debounceTimers[k]) clearTimeout(this._debounceTimers[k]);
+      }
+    }
   }
 
   onDiscoveryResult(discoveryResult) {
