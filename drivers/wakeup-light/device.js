@@ -34,6 +34,8 @@ class WakeupLightDevice extends Device {
       await this.addCapability('bedtime_tracking');
     if(!this.hasCapability('sunrise_preview'))
       await this.addCapability('sunrise_preview');
+    if(!this.hasCapability('relax_breathe'))
+      await this.addCapability('relax_breathe');
 
     this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
     this.registerCapabilityListener('dim', this.onCapabilityDim.bind(this));
@@ -44,11 +46,15 @@ class WakeupLightDevice extends Device {
     this.registerCapabilityListener('bedtime_tracking', this.onCapabilityBedtimeTracking.bind(this));
     this.registerCapabilityListener('sunrise_preview', this.onCapabilitySunrisePreview.bind(this));
     this.setupFlowSunrisePreviewMode();
+    this.registerCapabilityListener('relax_breathe', this.onCapabilityRelaxBreathe.bind(this));
+    this.setupFlowRelaxBreatheMode();
     this._alarmTriggeredCard = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
     this._sunsetOnTrigger = this.homey.flow.getDeviceTriggerCard('sunset_true');
     this._sunsetOffTrigger = this.homey.flow.getDeviceTriggerCard('sunset_false');
     this._sunriseOnTrigger = this.homey.flow.getDeviceTriggerCard('sunrise_preview_true');
     this._sunriseOffTrigger = this.homey.flow.getDeviceTriggerCard('sunrise_preview_false');
+    this._relaxOnTrigger = this.homey.flow.getDeviceTriggerCard('relax_breathe_true');
+    this._relaxOffTrigger = this.homey.flow.getDeviceTriggerCard('relax_breathe_false');
   }
 
   //Reads a setting as an integer, falling back to a default when it is not set yet
@@ -64,6 +70,7 @@ class WakeupLightDevice extends Device {
     this.update_loop_bedtime();
     this.update_loop_events();
     this.update_loop_sunset();
+    this.update_loop_relax();
     //this.update_loop_timers();
     this.refreshState();
   }
@@ -95,6 +102,12 @@ class WakeupLightDevice extends Device {
     let interval = 33000;
     this._timerSunset = setInterval(() => {
         this.updateSunsetState();
+    }, interval);
+  }
+  update_loop_relax() {
+    let interval = 34000;
+    this._timerRelax = setInterval(() => {
+        this.updateRelaxBreatheState();
     }, interval);
   }
   update_loop_timers() {
@@ -191,6 +204,29 @@ class WakeupLightDevice extends Device {
       return { snddv: 'off', sndch: '0' };
     return { snddv: 'dus', sndch: String(sel) };
   }
+
+  // this method is called when the Device has requested a state change (relax breathe)
+  async onCapabilityRelaxBreathe( value, opts ) {
+    await this.setCapabilityValue('relax_breathe', value);
+    var settings = this.getSettings();
+    var rtype = this._num(settings.relax_guidance_type, 0);
+    let body = {
+      "durat": this._num(settings.relax_duration, 10), //program duration in minutes
+      "onoff": value, //relax breathe on off
+      "progr": this._num(settings.relax_breathing_pace, 4) - 3, //breathing pace (device stores bpm - 3)
+      "rtype": rtype //guidance type [0 - Light, 1 - Sound]
+    };
+    if(rtype === 0)
+      body.intny = this._num(settings.relax_light_intensity, 20); //light level when guided by light
+    else
+      body.sndlv = this._num(settings.relax_sound_intensity, 12); //volume when guided by sound
+    somneoapi.putRelaxBreatheSettings(this.getStoreValue('address'), body).then(relaxdata => {
+      this.log(JSON.stringify(relaxdata))
+    }).catch(e => {
+      this.log('Error on updating Relax breathe status: '+e);
+      return e;
+    });
+  }
   // this method is called when the Device has requested a state change (nightlight)
   async onCapabilityNightlight( value, opts ) {
     await this.setCapabilityValue('nightlight', value);
@@ -268,6 +304,24 @@ class WakeupLightDevice extends Device {
       }
     }).catch(e => {
       this.log('Error on retrieving Sunset status: '+e);
+    });
+  }
+
+  async updateRelaxBreatheState()
+  {
+    somneoapi.getRelaxBreatheSettings(this.getStoreValue('address')).then(relaxdata => {
+      var active = relaxdata.onoff;
+      var prev = this.getCapabilityValue('relax_breathe');
+      this.setCapabilityValue('relax_breathe', active);
+      //Only fire on an actual change, not on the first poll after (re)start
+      if(prev !== null && prev !== undefined && prev !== active) {
+        if(active)
+          this._relaxOnTrigger.trigger(this).catch(e => { this.log('Error on firing relax_breathe_true: '+e); });
+        else
+          this._relaxOffTrigger.trigger(this).catch(e => { this.log('Error on firing relax_breathe_false: '+e); });
+      }
+    }).catch(e => {
+      this.log('Error on retrieving Relax breathe status: '+e);
     });
   }
 
@@ -355,6 +409,7 @@ class WakeupLightDevice extends Device {
     if(this._timerBedtime) clearInterval(this._timerBedtime);
     if(this._timerEvents) clearInterval(this._timerEvents);
     if(this._timerSunset) clearInterval(this._timerSunset);
+    if(this._timerRelax) clearInterval(this._timerRelax);
   }
 
   onDiscoveryResult(discoveryResult) {
@@ -388,6 +443,22 @@ class WakeupLightDevice extends Device {
         return new Promise((resolve, reject) => {
           this.log('now send the capability command');
           args.device.onCapabilitySunset(args.start).then(() => {
+            resolve(true);
+          }, (_error) => {
+            reject(_error);
+          });
+        });
+      });
+  }
+
+  async setupFlowRelaxBreatheMode()
+  {
+    this._setRelaxBreatheMode = await this.homey.flow.getActionCard('set-relax-breathe');
+    this._setRelaxBreatheMode
+      .registerRunListener(async (args, state) => {
+        this.log('attempt to set relax breathe mode: '+JSON.stringify(args.mode));
+        return new Promise((resolve, reject) => {
+          args.device.onCapabilityRelaxBreathe(args.mode).then(() => {
             resolve(true);
           }, (_error) => {
             reject(_error);

@@ -1,0 +1,11 @@
+{
+    "type": "boolean",
+    "title": { "en": "Relax Breathe" },
+    "insights": true,
+    "insightsTitleTrue": { "en": "Relax breathe was started"},
+    "insightsTitleFalse": { "en": "Relax breathe was stopped"},
+    "getable": true,
+    "setable": true,
+    "uiComponent": "button",
+    "uiQuickAction": true
+  }

@@ -140,6 +140,38 @@
             "filter": "driver_id=wakeup-light&capabilities=sunrise_preview"
           }
         ]
+      },
+      {
+        "id": "relax_breathe_false",
+        "title": {
+          "en": "Relax breathe is stopped"
+        },
+        "hint": {
+          "en": "When the relax breathe program has stopped"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light&capabilities=relax_breathe"
+          }
+        ]
+      },
+      {
+        "id": "relax_breathe_true",
+        "title": {
+          "en": "Relax breathe is started"
+        },
+        "hint": {
+          "en": "When the relax breathe program has started"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light&capabilities=relax_breathe"
+          }
+        ]
       }
     ],
     "actions": [
@@ -217,6 +249,35 @@
             "type": "device",
             "name": "device",
             "filter": "driver_id=wakeup-light&capabilities=sunrise_preview"
+          },
+          {
+            "type": "checkbox",
+            "name": "mode",
+            "title": {
+              "en": "On"
+            },
+            "placeholder": {
+              "en": "yes"
+            }
+          }
+        ]
+      },
+      {
+        "id": "set-relax-breathe",
+        "title": {
+          "en": "Start relax breathe"
+        },
+        "hint": {
+          "en": "Toggles the relax breathe program of the wake-up light"
+        },
+        "titleFormatted": {
+          "en": "Turns the relax breathe program on or off: [[mode]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light&capabilities=relax_breathe"
           },
           {
             "type": "checkbox",
@@ -355,6 +416,79 @@
               ]
             }
           ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Relax Breathe"
+          },
+          "hint": {
+            "en": "A light- or sound-guided wind-down function to help you relax before sleep. Follow one of seven rhythms with your breathing; 6-8 breaths per minute is a good starting point. Stop immediately if you feel unwell."
+          },
+          "children": [
+            {
+              "id": "relax_breathing_pace",
+              "type": "number",
+              "label": {
+                "en": "Breathing pace"
+              },
+              "value": 4,
+              "min": 4,
+              "max": 10,
+              "step": 1,
+              "units": {
+                "en": "bpm"
+              }
+            },
+            {
+              "id": "relax_duration",
+              "type": "number",
+              "label": {
+                "en": "Duration"
+              },
+              "value": 10,
+              "min": 5,
+              "max": 15,
+              "step": 5,
+              "units": {
+                "en": "minutes"
+              }
+            },
+            {
+              "id": "relax_guidance_type",
+              "type": "dropdown",
+              "label": {
+                "en": "Guidance type"
+              },
+              "value": "0",
+              "values": [
+                { "id": "0", "label": { "en": "Light" } },
+                { "id": "1", "label": { "en": "Sound" } }
+              ]
+            },
+            {
+              "id": "relax_light_intensity",
+              "type": "number",
+              "label": {
+                "en": "Light intensity"
+              },
+              "value": 20,
+              "min": 1,
+              "max": 25,
+              "step": 1
+            },
+            {
+              "id": "relax_sound_intensity",
+              "type": "number",
+              "label": {
+                "en": "Sound intensity"
+              },
+              "value": 12,
+              "min": 1,
+              "max": 25,
+              "step": 1
+            }
+          ]
         }
       ],
       "platforms": [
@@ -417,6 +551,23 @@
       },
       "insightsTitleFalse": {
         "en": "The sunrise preview was deactivated"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "button",
+      "uiQuickAction": true
+    },
+    "relax_breathe": {
+      "type": "boolean",
+      "title": {
+        "en": "Relax Breathe"
+      },
+      "insights": true,
+      "insightsTitleTrue": {
+        "en": "Relax breathe was started"
+      },
+      "insightsTitleFalse": {
+        "en": "Relax breathe was stopped"
       },
       "getable": true,
       "setable": true,

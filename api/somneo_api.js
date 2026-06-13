@@ -105,6 +105,26 @@ async function getAlarmSchedules(address)
   });
 }
 
+async function getRelaxBreatheSettings(address)
+{
+  console.info('Retrieving Relax breathe settings')
+  return new Promise((resolve, reject) => {(
+    getResponseData(address,'wurlx')).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
+async function putRelaxBreatheSettings(address,body)
+{
+  console.info('Updating Relax breathe settings')
+  return new Promise((resolve, reject) => {(
+    putResponseData(address,'wurlx', body)).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
 async function putSunrisePreview(address,enabled,colorScheme)
 {
   console.info('Updating Sunrise preview data')
@@ -175,6 +195,8 @@ async function getLastEvent(address)
 }
 
 module.exports.putMainLightState = putMainLightState;
+module.exports.getRelaxBreatheSettings = getRelaxBreatheSettings;
+module.exports.putRelaxBreatheSettings = putRelaxBreatheSettings;
 module.exports.putSunrisePreview = putSunrisePreview;
 module.exports.getSunsetSettings = getSunsetSettings;
 module.exports.putSunsetSettings = putSunsetSettings;

@@ -68,6 +68,26 @@
           "en": "When the sunrise preview has been turned on"
         },
         "$filter": "capabilities=sunrise_preview"
+      },
+      {
+        "id": "relax_breathe_false",
+        "title": {
+          "en": "Relax breathe is stopped"
+        },
+        "hint": {
+          "en": "When the relax breathe program has stopped"
+        },
+        "$filter": "capabilities=relax_breathe"
+      },
+      {
+        "id": "relax_breathe_true",
+        "title": {
+          "en": "Relax breathe is started"
+        },
+        "hint": {
+          "en": "When the relax breathe program has started"
+        },
+        "$filter": "capabilities=relax_breathe"
       }
     ],
     "actions": [
@@ -133,6 +153,31 @@
               "en": "Turns the sunrise preview on or off: [[mode]]"
             },
             "$filter": "capabilities=sunrise_preview",
+            "args": [
+              {
+                "type": "checkbox",
+                "name": "mode",
+                "title": {
+                  "en": "On"
+                },
+                "placeholder": {
+                  "en": "yes"
+                }
+              }
+            ]
+          },
+          {
+            "id": "set-relax-breathe",
+            "title": {
+              "en": "Start relax breathe"
+            },
+            "hint": {
+              "en": "Toggles the relax breathe program of the wake-up light"
+            },
+            "titleFormatted": {
+              "en": "Turns the relax breathe program on or off: [[mode]]"
+            },
+            "$filter": "capabilities=relax_breathe",
             "args": [
               {
                 "type": "checkbox",
