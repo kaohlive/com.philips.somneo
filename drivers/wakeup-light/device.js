@@ -396,6 +396,24 @@ class WakeupLightDevice extends Device {
 
   async onSettings({ oldSettings, newSettings, changedKeys }) {
     this.log('Wakeup-Light: '+this.getName()+' - Device settings where changed');
+    if(changedKeys.includes('display_always_on') || changedKeys.includes('display_brightness')) {
+      await somneoapi.putDisplaySettings(this.getStoreValue('address'), newSettings.display_always_on, this._num(newSettings.display_brightness, 3)).catch(e => {
+        this.log('Error on updating Display settings: '+e);
+      });
+    }
+  }
+
+  //Pushes the configured display settings to the device (settings are the source of truth)
+  async applyDisplaySettings()
+  {
+    var settings = this.getSettings();
+    if(settings.display_always_on === undefined)
+      return;
+    somneoapi.putDisplaySettings(this.getStoreValue('address'), settings.display_always_on, this._num(settings.display_brightness, 3)).then(displaydata => {
+      this.log(JSON.stringify(displaydata))
+    }).catch(e => {
+      this.log('Error on applying Display settings: '+e);
+    });
   }
 
   async onRenamed(name) {
@@ -420,6 +438,7 @@ class WakeupLightDevice extends Device {
     this.log('Located device and ready to retrieve data...');
     this.log('Device: '+this.getName()+' was located with address '+discoveryResult.address);
     this.setStoreValue('address',discoveryResult.address);
+    this.applyDisplaySettings();
     // This method will be executed once when the device has been found (onDiscoveryResult returned true)
   }
 

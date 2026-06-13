@@ -161,6 +161,20 @@ async function putSunsetSettings(address,body)
   });
 }
 
+async function putDisplaySettings(address,alwaysOn,brightness)
+{
+  console.info('Updating Display settings')
+  let body = {
+    "dspon": alwaysOn, //keep the display always on
+    "brght": parseInt(brightness) //display brightness level
+  };
+  return new Promise((resolve, reject) => {(
+    putResponseData(address,'wusts', body)).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
 async function getBedtimeTracking(address)
 {
   console.info('Retrieving Sleep tracking data')
@@ -200,6 +214,7 @@ module.exports.putRelaxBreatheSettings = putRelaxBreatheSettings;
 module.exports.putSunrisePreview = putSunrisePreview;
 module.exports.getSunsetSettings = getSunsetSettings;
 module.exports.putSunsetSettings = putSunsetSettings;
+module.exports.putDisplaySettings = putDisplaySettings;
 module.exports.getBedtimeTracking = getBedtimeTracking;
 module.exports.putBedtimeTracking = putBedtimeTracking;
 module.exports.getLastEvent = getLastEvent;
