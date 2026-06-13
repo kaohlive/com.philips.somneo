@@ -1,23 +1,57 @@
 'use strict'
 const http = require('http.min');
 
-//We are keeping it simple
+//The Somneo's embedded webserver is easily overloaded, so every request to a device is run
+//through a per-host queue: at most one request in flight, with a minimum gap between requests
+//and a hard timeout so a hung request can never block the queue.
+const MIN_REQUEST_GAP = 1100;
+const REQUEST_TIMEOUT = 15000;
+
+const queues = {};
+
+function delay(ms)
+{
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+//Runs fn through the queue for a given device address (single-flight, spaced requests)
+function enqueue(address, fn)
+{
+  if(!queues[address])
+    queues[address] = { chain: Promise.resolve(), last: 0 };
+  var q = queues[address];
+  var run = q.chain.then(async () => {
+    var wait = MIN_REQUEST_GAP - (Date.now() - q.last);
+    if(wait > 0)
+      await delay(wait);
+    try {
+      return await fn();
+    } finally {
+      q.last = Date.now();
+    }
+  });
+  //Keep the chain alive when a request rejects, so one failure does not stall the queue
+  q.chain = run.catch(() => {});
+  return run;
+}
+
 async function getResponseData(address,path)
 {
   var options = {
     protocol: 'https:',
     host: address,
     path: '/di/v1/products/1/'+path,
+    timeout: REQUEST_TIMEOUT,
     headers: {
       'content-type': 'application/json'
     }
   }
   console.info('Getting data from wakeup light')
-  return new Promise((resolve, reject) => {(
+  return enqueue(address, () => new Promise((resolve, reject) => {(
     http.get(options)).then(res => {
       resolve(JSON.parse(res.data));
     }).catch(e => {reject(e)});
-  });
+  }));
 }
 
 async function putResponseData(address,path,body)
@@ -26,17 +60,18 @@ async function putResponseData(address,path,body)
     protocol: 'https:',
     host: address,
     path: '/di/v1/products/1/'+path,
+    timeout: REQUEST_TIMEOUT,
     headers: {
       'content-type': 'application/json'
     }
   }
   console.log(body)
   console.info('Sending data to wakeup light')
-  return new Promise((resolve, reject) => {(
+  return enqueue(address, () => new Promise((resolve, reject) => {(
     http.put(options, body)).then(res => {
       resolve(JSON.parse(res.data));
     }).catch(e => {reject(e)});
-  });
+  }));
 }
 
 async function getSensors(address)
