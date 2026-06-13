@@ -30,6 +30,8 @@ class WakeupLightDevice extends Device {
       await this.addCapability('nightlight');
     if(!this.hasCapability('sunset'))
       await this.addCapability('sunset');
+    if(!this.hasCapability('bedtime_tracking'))
+      await this.addCapability('bedtime_tracking');
 
     this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
     this.registerCapabilityListener('dim', this.onCapabilityDim.bind(this));
@@ -37,12 +39,14 @@ class WakeupLightDevice extends Device {
     this.setupFlowNightlightMode();
     this.registerCapabilityListener('sunset', this.onCapabilitySunset.bind(this));
     this.setupFlowSunsetMode();
+    this.registerCapabilityListener('bedtime_tracking', this.onCapabilityBedtimeTracking.bind(this));
   }
 
 
   start_update_loops() {
     this.update_loop_sensors();
     this.update_loop_mainlight();
+    this.update_loop_bedtime();
     //this.update_loop_timers();
     this.refreshState();
   }
@@ -56,6 +60,12 @@ class WakeupLightDevice extends Device {
     let interval = 31000;
     this._timerLight = setInterval(() => {
         this.updateMainLightState();
+    }, interval);
+  }
+  update_loop_bedtime() {
+    let interval = 32000;
+    this._timerBedtime = setInterval(() => {
+        this.updateBedtimeTracking();
     }, interval);
   }
   update_loop_timers() {
@@ -129,6 +139,17 @@ class WakeupLightDevice extends Device {
     });
   }
 
+  // this method is called when the Device has requested a state change (sleep/bedtime tracking)
+  async onCapabilityBedtimeTracking( value, opts ) {
+    await this.setCapabilityValue('bedtime_tracking', value);
+    somneoapi.putBedtimeTracking(this.getStoreValue('address'), value).then(bedtimedata => {
+      this.log(JSON.stringify(bedtimedata))
+    }).catch(e => {
+      this.log('Error on updating Sleep tracking status: '+e);
+      return e;
+    });
+  }
+
   async setMainLightState()
   {
     var onoff = this.getCapabilityValue('onoff');
@@ -155,6 +176,15 @@ class WakeupLightDevice extends Device {
       this.setCapabilityValue('nightlight', lightstatedata.ngtlt);
     }).catch(e => { 
       this.log('Error on retrieving Light status: '+e);
+    });
+  }
+
+  async updateBedtimeTracking()
+  {
+    somneoapi.getBedtimeTracking(this.getStoreValue('address')).then(bedtimedata => {
+      this.setCapabilityValue('bedtime_tracking', bedtimedata.night);
+    }).catch(e => {
+      this.log('Error on retrieving Sleep tracking status: '+e);
     });
   }
 
@@ -195,6 +225,9 @@ class WakeupLightDevice extends Device {
 
   async onDeleted() {
     this.log('Wakeup-Light: '+this.getName()+' - has been deleted');
+    if(this._timerSensors) clearInterval(this._timerSensors);
+    if(this._timerLight) clearInterval(this._timerLight);
+    if(this._timerBedtime) clearInterval(this._timerBedtime);
   }
 
   onDiscoveryResult(discoveryResult) {

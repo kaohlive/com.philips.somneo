@@ -1,0 +1,11 @@
+{
+    "type": "boolean",
+    "title": { "en": "Sleep Tracking" },
+    "insights": true,
+    "insightsTitleTrue": { "en": "Sleep tracking was turned on"},
+    "insightsTitleFalse": { "en": "Sleep tracking was turned off"},
+    "getable": true,
+    "setable": true,
+    "uiComponent": "button",
+    "uiQuickAction": true
+  }

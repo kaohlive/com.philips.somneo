@@ -102,10 +102,35 @@ async function getAlarmSchedules(address)
     getResponseData(address,'wualm/aalms')).then(data => {
       resolve(data);
     }).catch(e => {reject(e)});
-  });  
+  });
+}
+
+async function getBedtimeTracking(address)
+{
+  console.info('Retrieving Sleep tracking data')
+  return new Promise((resolve, reject) => {(
+    getResponseData(address,'wungt')).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
+async function putBedtimeTracking(address,enabled)
+{
+  console.info('Updating Sleep tracking data')
+  let body = {
+    "night": enabled //sleep/bedtime tracking on off
+  };
+  return new Promise((resolve, reject) => {(
+    putResponseData(address,'wungt', body)).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
 }
 
 module.exports.putMainLightState = putMainLightState;
+module.exports.getBedtimeTracking = getBedtimeTracking;
+module.exports.putBedtimeTracking = putBedtimeTracking;
 module.exports.getAlarmSchedules = getAlarmSchedules;
 module.exports.getAlarmState = getAlarmState;
 module.exports.getTimersState = getTimersState;
