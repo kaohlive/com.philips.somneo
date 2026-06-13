@@ -41,6 +41,14 @@ class WakeupLightDevice extends Device {
     this.setupFlowSunsetMode();
     this.registerCapabilityListener('bedtime_tracking', this.onCapabilityBedtimeTracking.bind(this));
     this._alarmTriggeredCard = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
+    this._sunsetOnTrigger = this.homey.flow.getDeviceTriggerCard('sunset_true');
+    this._sunsetOffTrigger = this.homey.flow.getDeviceTriggerCard('sunset_false');
+  }
+
+  //Reads a setting as an integer, falling back to a default when it is not set yet
+  _num(val, def) {
+    var n = parseInt(val);
+    return isNaN(n) ? def : n;
   }
 
 
@@ -49,6 +57,7 @@ class WakeupLightDevice extends Device {
     this.update_loop_mainlight();
     this.update_loop_bedtime();
     this.update_loop_events();
+    this.update_loop_sunset();
     //this.update_loop_timers();
     this.refreshState();
   }
@@ -74,6 +83,12 @@ class WakeupLightDevice extends Device {
     let interval = 20000;
     this._timerEvents = setInterval(() => {
         this.updateEvents();
+    }, interval);
+  }
+  update_loop_sunset() {
+    let interval = 33000;
+    this._timerSunset = setInterval(() => {
+        this.updateSunsetState();
     }, interval);
   }
   update_loop_timers() {
@@ -112,7 +127,6 @@ class WakeupLightDevice extends Device {
 	async onCapabilityOnoff( value, opts ) {
     await this.setCapabilityValue('onoff', value);
     await this.setCapabilityValue('nightlight', false);
-    await this.setCapabilityValue('sunset', false);
     return await this.setMainLightState();
   }
   // this method is called when the Device has requested a state change (dim)
@@ -123,20 +137,40 @@ class WakeupLightDevice extends Device {
   // this method is called when the Device has requested a state change (sunset)
   async onCapabilitySunset( value, opts ) {
     await this.setCapabilityValue('sunset', value);
-    await this.setCapabilityValue('onoff', false);
-    await this.setCapabilityValue('nightlight', false);
-    var dim = 25*this.getCapabilityValue('dim');
-    somneoapi.putMainLightState(this.getStoreValue('address'), false, dim, value, false).then(lightstatedata => {
-      this.log(JSON.stringify(lightstatedata))
-    }).catch(e => { 
-      this.log('Error on updating Light status: '+e);
+    var settings = this.getSettings();
+    var sound = this.getSunsetSound(settings);
+    let body = {
+      "durat": this._num(settings.sunset_duration, 30), //sunset duration in minutes
+      "onoff": value, //sunset on off
+      "curve": this._num(settings.sunset_light_intensity, 20), //sunset light level
+      "ctype": this._num(settings.sunset_color_scheme, 0), //sunset color scheme
+      "snddv": sound.snddv, //sound device ['off','dus','fmr','aux']
+      "sndch": sound.sndch, //sound channel/preset
+      "sndlv": this._num(settings.sunset_ambient_volume, 12) //ambient sound volume
+    };
+    somneoapi.putSunsetSettings(this.getStoreValue('address'), body).then(sunsetdata => {
+      this.log(JSON.stringify(sunsetdata))
+    }).catch(e => {
+      this.log('Error on updating Sunset status: '+e);
       return e;
     });
+  }
+
+  //Maps the ambient sound setting onto the device's sound device and channel fields
+  getSunsetSound(settings)
+  {
+    var sel = settings.sunset_ambient_sound;
+    if(sel === 'fmr')
+      return { snddv: 'fmr', sndch: String(settings.sunset_ambient_radio_channel || '1') };
+    if(sel === 'aux')
+      return { snddv: 'aux', sndch: '0' };
+    if(sel === undefined || sel === 'off')
+      return { snddv: 'off', sndch: '0' };
+    return { snddv: 'dus', sndch: String(sel) };
   }
   // this method is called when the Device has requested a state change (nightlight)
   async onCapabilityNightlight( value, opts ) {
     await this.setCapabilityValue('nightlight', value);
-    await this.setCapabilityValue('sunset', false);
     await this.setCapabilityValue('onoff', false);
     var dim = 25*this.getCapabilityValue('dim');
     somneoapi.putMainLightState(this.getStoreValue('address'), false, dim, false, value).then(lightstatedata => {
@@ -180,10 +214,27 @@ class WakeupLightDevice extends Device {
       //this.log(JSON.stringify(lightstatedata))
       this.setCapabilityValue('onoff', lightstatedata.onoff);
       this.setCapabilityValue('dim', (lightstatedata.ltlvl/25));
-      this.setCapabilityValue('sunset', lightstatedata.tempy);
       this.setCapabilityValue('nightlight', lightstatedata.ngtlt);
     }).catch(e => { 
       this.log('Error on retrieving Light status: '+e);
+    });
+  }
+
+  async updateSunsetState()
+  {
+    somneoapi.getSunsetSettings(this.getStoreValue('address')).then(sunsetdata => {
+      var active = sunsetdata.onoff;
+      var prev = this.getCapabilityValue('sunset');
+      this.setCapabilityValue('sunset', active);
+      //Only fire on an actual change, not on the first poll after (re)start
+      if(prev !== null && prev !== undefined && prev !== active) {
+        if(active)
+          this._sunsetOnTrigger.trigger(this).catch(e => { this.log('Error on firing sunset_true: '+e); });
+        else
+          this._sunsetOffTrigger.trigger(this).catch(e => { this.log('Error on firing sunset_false: '+e); });
+      }
+    }).catch(e => {
+      this.log('Error on retrieving Sunset status: '+e);
     });
   }
 
@@ -270,6 +321,7 @@ class WakeupLightDevice extends Device {
     if(this._timerLight) clearInterval(this._timerLight);
     if(this._timerBedtime) clearInterval(this._timerBedtime);
     if(this._timerEvents) clearInterval(this._timerEvents);
+    if(this._timerSunset) clearInterval(this._timerSunset);
   }
 
   onDiscoveryResult(discoveryResult) {

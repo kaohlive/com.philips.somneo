@@ -105,6 +105,26 @@ async function getAlarmSchedules(address)
   });
 }
 
+async function getSunsetSettings(address)
+{
+  console.info('Retrieving Sunset settings')
+  return new Promise((resolve, reject) => {(
+    getResponseData(address,'wudsk')).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
+async function putSunsetSettings(address,body)
+{
+  console.info('Updating Sunset settings')
+  return new Promise((resolve, reject) => {(
+    putResponseData(address,'wudsk', body)).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
 async function getBedtimeTracking(address)
 {
   console.info('Retrieving Sleep tracking data')
@@ -139,6 +159,8 @@ async function getLastEvent(address)
 }
 
 module.exports.putMainLightState = putMainLightState;
+module.exports.getSunsetSettings = getSunsetSettings;
+module.exports.putSunsetSettings = putSunsetSettings;
 module.exports.getBedtimeTracking = getBedtimeTracking;
 module.exports.putBedtimeTracking = putBedtimeTracking;
 module.exports.getLastEvent = getLastEvent;

@@ -1,0 +1,73 @@
+[
+  {
+    "type": "group",
+    "label": { "en": "Sunset" },
+    "children": [
+      {
+        "id": "sunset_duration",
+        "type": "number",
+        "label": { "en": "Duration" },
+        "value": 30,
+        "min": 5,
+        "max": 60,
+        "units": { "en": "minutes" }
+      },
+      {
+        "id": "sunset_light_intensity",
+        "type": "number",
+        "label": { "en": "Light intensity" },
+        "value": 20,
+        "min": 1,
+        "max": 25
+      },
+      {
+        "id": "sunset_color_scheme",
+        "type": "dropdown",
+        "label": { "en": "Color scheme" },
+        "value": "0",
+        "values": [
+          { "id": "0", "label": { "en": "Sunny Day" } },
+          { "id": "1", "label": { "en": "Island Red" } },
+          { "id": "2", "label": { "en": "Nordic White" } },
+          { "id": "3", "label": { "en": "Caribbean Red" } }
+        ]
+      },
+      {
+        "id": "sunset_ambient_sound",
+        "type": "dropdown",
+        "label": { "en": "Ambient sound" },
+        "value": "off",
+        "values": [
+          { "id": "off", "label": { "en": "No sound" } },
+          { "id": "1", "label": { "en": "Soft Rain" } },
+          { "id": "2", "label": { "en": "Ocean Waves" } },
+          { "id": "3", "label": { "en": "Under Water" } },
+          { "id": "4", "label": { "en": "Summer Lake" } },
+          { "id": "fmr", "label": { "en": "FM Radio" } },
+          { "id": "aux", "label": { "en": "AUX Input" } }
+        ]
+      },
+      {
+        "id": "sunset_ambient_radio_channel",
+        "type": "dropdown",
+        "label": { "en": "FM radio channel (when ambient sound is FM Radio)" },
+        "value": "1",
+        "values": [
+          { "id": "1", "label": { "en": "Channel 1" } },
+          { "id": "2", "label": { "en": "Channel 2" } },
+          { "id": "3", "label": { "en": "Channel 3" } },
+          { "id": "4", "label": { "en": "Channel 4" } },
+          { "id": "5", "label": { "en": "Channel 5" } }
+        ]
+      },
+      {
+        "id": "sunset_ambient_volume",
+        "type": "number",
+        "label": { "en": "Ambient sound volume" },
+        "value": 12,
+        "min": 0,
+        "max": 25
+      }
+    ]
+  }
+]
