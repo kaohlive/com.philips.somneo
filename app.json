@@ -30,6 +30,22 @@
   "flow": {
     "triggers": [
       {
+        "id": "alarm_triggered",
+        "title": {
+          "en": "An alarm goes off"
+        },
+        "hint": {
+          "en": "When an alarm starts the wake-up sequence on the device"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light"
+          }
+        ]
+      },
+      {
         "id": "sunset_false",
         "title": {
           "en": "The sunset mode is deactivated"

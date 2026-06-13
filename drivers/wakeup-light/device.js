@@ -40,6 +40,7 @@ class WakeupLightDevice extends Device {
     this.registerCapabilityListener('sunset', this.onCapabilitySunset.bind(this));
     this.setupFlowSunsetMode();
     this.registerCapabilityListener('bedtime_tracking', this.onCapabilityBedtimeTracking.bind(this));
+    this._alarmTriggeredCard = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
   }
 
 
@@ -47,6 +48,7 @@ class WakeupLightDevice extends Device {
     this.update_loop_sensors();
     this.update_loop_mainlight();
     this.update_loop_bedtime();
+    this.update_loop_events();
     //this.update_loop_timers();
     this.refreshState();
   }
@@ -66,6 +68,12 @@ class WakeupLightDevice extends Device {
     let interval = 32000;
     this._timerBedtime = setInterval(() => {
         this.updateBedtimeTracking();
+    }, interval);
+  }
+  update_loop_events() {
+    let interval = 20000;
+    this._timerEvents = setInterval(() => {
+        this.updateEvents();
     }, interval);
   }
   update_loop_timers() {
@@ -188,6 +196,39 @@ class WakeupLightDevice extends Device {
     });
   }
 
+  async updateEvents()
+  {
+    //Older Somneo devices do not expose the event endpoint, stop polling once we are sure
+    if(this._eventsSupported === false)
+      return;
+    somneoapi.getLastEvent(this.getStoreValue('address')).then(eventdata => {
+      this._eventFailures = 0;
+      var event = eventdata.event;
+      //On the first poll we only store a baseline, so we do not fire on app/device restart
+      if(this._lastEvent === undefined) {
+        this._lastEvent = event;
+        return;
+      }
+      if(event !== this._lastEvent) {
+        this._lastEvent = event;
+        //'startwakeup' is sent the moment an alarm starts the wake-up sequence
+        if(event === 'startwakeup') {
+          this.log('An alarm went off, firing the alarm trigger');
+          this._alarmTriggeredCard.trigger(this).catch(e => {
+            this.log('Error on firing alarm trigger: '+e);
+          });
+        }
+      }
+    }).catch(e => {
+      this._eventFailures = (this._eventFailures || 0) + 1;
+      this.log('Error on retrieving device events ('+this._eventFailures+'): '+e);
+      if(this._eventFailures >= 3) {
+        this._eventsSupported = false;
+        this.log('Device does not support the event system, disabling alarm trigger polling');
+      }
+    });
+  }
+
   async updateTimerState()
   {
     somneoapi.getTimersState(this.getStoreValue('address')).then(timerstatedata => {
@@ -228,6 +269,7 @@ class WakeupLightDevice extends Device {
     if(this._timerSensors) clearInterval(this._timerSensors);
     if(this._timerLight) clearInterval(this._timerLight);
     if(this._timerBedtime) clearInterval(this._timerBedtime);
+    if(this._timerEvents) clearInterval(this._timerEvents);
   }
 
   onDiscoveryResult(discoveryResult) {

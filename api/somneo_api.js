@@ -128,9 +128,20 @@ async function putBedtimeTracking(address,enabled)
   });
 }
 
+async function getLastEvent(address)
+{
+  console.info('Retrieving last device event')
+  return new Promise((resolve, reject) => {(
+    getResponseData(address,'dataupload/event.1/data')).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
 module.exports.putMainLightState = putMainLightState;
 module.exports.getBedtimeTracking = getBedtimeTracking;
 module.exports.putBedtimeTracking = putBedtimeTracking;
+module.exports.getLastEvent = getLastEvent;
 module.exports.getAlarmSchedules = getAlarmSchedules;
 module.exports.getAlarmState = getAlarmState;
 module.exports.getTimersState = getTimersState;
