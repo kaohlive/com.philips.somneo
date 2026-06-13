@@ -18,6 +18,24 @@
         "min": 1,
         "max": 6,
         "step": 1
+      },
+      {
+        "id": "polling_enabled",
+        "type": "checkbox",
+        "value": true,
+        "label": { "en": "Enable polling" },
+        "hint": { "en": "Turn off to stop all communication with the device, for example when you control it from the official Philips app." }
+      },
+      {
+        "id": "polling_interval",
+        "type": "number",
+        "label": { "en": "Polling interval" },
+        "value": 15,
+        "min": 5,
+        "max": 3600,
+        "step": 1,
+        "units": { "en": "sec" },
+        "hint": { "en": "How often the app reads state from the device. Higher values reduce load on the device." }
       }
     ]
   },

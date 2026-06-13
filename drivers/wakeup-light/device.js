@@ -64,10 +64,16 @@ class WakeupLightDevice extends Device {
   }
 
 
-  start_update_loops() {
+  start_update_loops(settings) {
+    settings = settings || this.getSettings();
+    if(settings.polling_enabled === false) {
+      this.log('Polling is disabled in the device settings');
+      return;
+    }
     this._polling = true;
     this._pollTick = 0;
-    this._pollBaseInterval = 15000;
+    this._pollConfiguredInterval = this._num(settings.polling_interval, 15) * 1000;
+    this._pollBaseInterval = this._pollConfiguredInterval;
     this._consecutiveFailures = 0;
     this.poll_loop();
   }
@@ -79,7 +85,7 @@ class WakeupLightDevice extends Device {
     if(ok) {
       if(this._consecutiveFailures > 0) {
         this._consecutiveFailures = 0;
-        this._pollBaseInterval = 15000;
+        this._pollBaseInterval = this._pollConfiguredInterval || 15000;
         if(!this.getAvailable())
           this.setAvailable().catch(() => {});
       }
@@ -457,6 +463,19 @@ class WakeupLightDevice extends Device {
       await somneoapi.putDisplaySettings(this.getStoreValue('address'), newSettings.display_always_on, this._num(newSettings.display_brightness, 3)).catch(e => {
         this.log('Error on updating Display settings: '+e);
       });
+    }
+    if(changedKeys.includes('polling_interval')) {
+      this._pollConfiguredInterval = this._num(newSettings.polling_interval, 15) * 1000;
+      this._pollBaseInterval = this._pollConfiguredInterval;
+    }
+    if(changedKeys.includes('polling_enabled')) {
+      if(newSettings.polling_enabled && !this._polling)
+        this.start_update_loops(newSettings);
+      else if(!newSettings.polling_enabled && this._polling) {
+        this._polling = false;
+        if(this._pollTimeout) clearTimeout(this._pollTimeout);
+        this.log('Polling stopped by settings change');
+      }
     }
   }
 
