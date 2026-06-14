@@ -81,6 +81,21 @@ class WakeupLightDevice extends Device {
     return isNaN(n) ? def : n;
   }
 
+  //Safely reflects a polled value onto a capability. Skips missing/NaN values (the device can
+  //return partial data under load) and ignores writes to a device that was removed mid-poll,
+  //which avoids the "Expected number, got undefined" and "Device not found" errors.
+  _set(cap, value) {
+    if(this._deleted)
+      return;
+    if(value === undefined || value === null)
+      return;
+    if(typeof value === 'number' && isNaN(value))
+      return;
+    this.setCapabilityValue(cap, value).catch(e => {
+      this.log('Could not set '+cap+': '+e);
+    });
+  }
+
 
   start_update_loops(settings) {
     settings = settings || this.getSettings();
@@ -174,10 +189,10 @@ class WakeupLightDevice extends Device {
   {
     return somneoapi.getSensors(this.getStoreValue('address')).then(sensordata => {
         //this.log(JSON.stringify(sensordata))
-        this.setCapabilityValue('measure_humidity', sensordata.msrhu);
-        this.setCapabilityValue('measure_luminance', sensordata.mslux);
-        this.setCapabilityValue('measure_temperature', sensordata.mstmp);
-        this.setCapabilityValue('measure_noise', sensordata.mssnd);
+        this._set('measure_humidity', sensordata.msrhu);
+        this._set('measure_luminance', sensordata.mslux);
+        this._set('measure_temperature', sensordata.mstmp);
+        this._set('measure_noise', sensordata.mssnd);
     }).catch(e => { 
       this.log('Error on retrieving sensor data: '+e);
     });
@@ -311,7 +326,7 @@ class WakeupLightDevice extends Device {
     await this.setCapabilityValue('media_input', value);
     somneoapi.putPlayerSettings(this.getStoreValue('address'), { "snddv": value }).then(player => {
       if(value === 'aux')
-        this.setCapabilityValue('speaker_track', '');
+        this._set('speaker_track', '');
     }).catch(e => {
       this.log('Error on changing player source: '+e);
     });
@@ -381,7 +396,7 @@ class WakeupLightDevice extends Device {
     var settings = this.getSettings();
     var name = settings['name_ch'+channel] || ('Channel '+channel);
     var freq = settings['frequency_ch'+channel];
-    this.setCapabilityValue('speaker_track', freq ? (name+' ('+freq+' FM)') : name);
+    this._set('speaker_track', freq ? (name+' ('+freq+' FM)') : name);
   }
 
   async setMainLightState()
@@ -405,11 +420,11 @@ class WakeupLightDevice extends Device {
     return somneoapi.getMainLightState(this.getStoreValue('address')).then(lightstatedata => {
       //this.log(JSON.stringify(lightstatedata))
       this._reportHealth(true);
-      this.setCapabilityValue('onoff', lightstatedata.onoff);
-      this.setCapabilityValue('dim', (lightstatedata.ltlvl/25));
-      this.setCapabilityValue('nightlight', lightstatedata.ngtlt);
+      this._set('onoff', lightstatedata.onoff);
+      this._set('dim', (lightstatedata.ltlvl/25));
+      this._set('nightlight', lightstatedata.ngtlt);
       var prevSunrise = this.getCapabilityValue('sunrise_preview');
-      this.setCapabilityValue('sunrise_preview', lightstatedata.tempy);
+      this._set('sunrise_preview', lightstatedata.tempy);
       //Only fire on an actual change, not on the first poll after (re)start
       if(prevSunrise !== null && prevSunrise !== undefined && prevSunrise !== lightstatedata.tempy) {
         if(lightstatedata.tempy)
@@ -428,7 +443,7 @@ class WakeupLightDevice extends Device {
   _setSunsetState(active)
   {
     var prev = this.getCapabilityValue('sunset');
-    this.setCapabilityValue('sunset', active);
+    this._set('sunset', active);
     if(prev !== null && prev !== undefined && prev !== active) {
       if(active)
         this._sunsetOnTrigger.trigger(this).catch(e => { this.log('Error on firing sunset_true: '+e); });
@@ -440,7 +455,7 @@ class WakeupLightDevice extends Device {
   _setRelaxState(active)
   {
     var prev = this.getCapabilityValue('relax_breathe');
-    this.setCapabilityValue('relax_breathe', active);
+    this._set('relax_breathe', active);
     if(prev !== null && prev !== undefined && prev !== active) {
       if(active)
         this._relaxOnTrigger.trigger(this).catch(e => { this.log('Error on firing relax_breathe_true: '+e); });
@@ -451,7 +466,7 @@ class WakeupLightDevice extends Device {
 
   _setBedtimeState(active)
   {
-    this.setCapabilityValue('bedtime_tracking', active);
+    this._set('bedtime_tracking', active);
   }
 
   async updateSunsetState()
@@ -486,11 +501,10 @@ class WakeupLightDevice extends Device {
   {
     return somneoapi.getPlayerSettings(this.getStoreValue('address')).then(player => {
       if(player.snddv === 'fmr' || player.snddv === 'aux')
-        this.setCapabilityValue('media_input', player.snddv);
+        this._set('media_input', player.snddv);
       if(player.sdvol !== undefined && player.sdvol !== null)
-        this.setCapabilityValue('volume_set', player.sdvol / 25);
-      if(player.onoff !== undefined && player.onoff !== null)
-        this.setCapabilityValue('speaker_playing', player.onoff);
+        this._set('volume_set', player.sdvol / 25);
+      this._set('speaker_playing', player.onoff);
       if(player.snddv === 'fmr' && player.sndch) {
         this._currentRadioChannel = parseInt(player.sndch);
         this._updateRadioTrack(player.sndch);
@@ -641,6 +655,7 @@ class WakeupLightDevice extends Device {
 
   async onDeleted() {
     this.log('Wakeup-Light: '+this.getName()+' - has been deleted');
+    this._deleted = true;
     this._polling = false;
     if(this._pollTimeout) clearTimeout(this._pollTimeout);
     if(this._debounceTimers) {
