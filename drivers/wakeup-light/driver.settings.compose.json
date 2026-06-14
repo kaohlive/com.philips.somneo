@@ -182,5 +182,22 @@
         "step": 1
       }
     ]
+  },
+  {
+    "type": "group",
+    "label": { "en": "Radio channels" },
+    "hint": { "en": "Name and tune the five FM presets. Use the next/previous buttons on the device to switch between them." },
+    "children": [
+      { "id": "name_ch1", "type": "text", "label": { "en": "Channel 1 name" }, "value": "Channel 1" },
+      { "id": "frequency_ch1", "type": "number", "label": { "en": "Channel 1 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } },
+      { "id": "name_ch2", "type": "text", "label": { "en": "Channel 2 name" }, "value": "Channel 2" },
+      { "id": "frequency_ch2", "type": "number", "label": { "en": "Channel 2 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } },
+      { "id": "name_ch3", "type": "text", "label": { "en": "Channel 3 name" }, "value": "Channel 3" },
+      { "id": "frequency_ch3", "type": "number", "label": { "en": "Channel 3 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } },
+      { "id": "name_ch4", "type": "text", "label": { "en": "Channel 4 name" }, "value": "Channel 4" },
+      { "id": "frequency_ch4", "type": "number", "label": { "en": "Channel 4 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } },
+      { "id": "name_ch5", "type": "text", "label": { "en": "Channel 5 name" }, "value": "Channel 5" },
+      { "id": "frequency_ch5", "type": "number", "label": { "en": "Channel 5 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } }
+    ]
   }
 ]

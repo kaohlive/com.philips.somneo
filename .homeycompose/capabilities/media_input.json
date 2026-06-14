@@ -1,0 +1,11 @@
+{
+    "type": "enum",
+    "title": { "en": "Source" },
+    "getable": true,
+    "setable": true,
+    "uiComponent": "picker",
+    "values": [
+      { "id": "fmr", "title": { "en": "FM Radio" } },
+      { "id": "aux", "title": { "en": "AUX" } }
+    ]
+  }

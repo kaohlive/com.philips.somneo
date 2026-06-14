@@ -203,6 +203,46 @@ async function putSunsetSettings(address,body)
   });
 }
 
+async function getPlayerSettings(address)
+{
+  console.info('Retrieving Player settings')
+  return new Promise((resolve, reject) => {(
+    getResponseData(address,'wuply')).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
+async function putPlayerSettings(address,body)
+{
+  console.info('Updating Player settings')
+  return new Promise((resolve, reject) => {(
+    putResponseData(address,'wuply', body)).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
+async function getRadioFrequencies(address)
+{
+  console.info('Retrieving Radio frequencies')
+  return new Promise((resolve, reject) => {(
+    getResponseData(address,'wufmp/00')).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
+async function putRadioFrequencies(address,body)
+{
+  console.info('Updating Radio frequencies')
+  return new Promise((resolve, reject) => {(
+    putResponseData(address,'wufmp/00', body)).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
 async function putDisplaySettings(address,alwaysOn,brightness)
 {
   console.info('Updating Display settings')
@@ -256,6 +296,10 @@ module.exports.putRelaxBreatheSettings = putRelaxBreatheSettings;
 module.exports.putSunrisePreview = putSunrisePreview;
 module.exports.getSunsetSettings = getSunsetSettings;
 module.exports.putSunsetSettings = putSunsetSettings;
+module.exports.getPlayerSettings = getPlayerSettings;
+module.exports.putPlayerSettings = putPlayerSettings;
+module.exports.getRadioFrequencies = getRadioFrequencies;
+module.exports.putRadioFrequencies = putRadioFrequencies;
 module.exports.putDisplaySettings = putDisplaySettings;
 module.exports.getBedtimeTracking = getBedtimeTracking;
 module.exports.putBedtimeTracking = putBedtimeTracking;

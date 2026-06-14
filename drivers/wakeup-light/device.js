@@ -36,6 +36,18 @@ class WakeupLightDevice extends Device {
       await this.addCapability('sunrise_preview');
     if(!this.hasCapability('relax_breathe'))
       await this.addCapability('relax_breathe');
+    if(!this.hasCapability('media_input'))
+      await this.addCapability('media_input');
+    if(!this.hasCapability('volume_set'))
+      await this.addCapability('volume_set');
+    if(!this.hasCapability('speaker_playing'))
+      await this.addCapability('speaker_playing');
+    if(!this.hasCapability('speaker_next'))
+      await this.addCapability('speaker_next');
+    if(!this.hasCapability('speaker_prev'))
+      await this.addCapability('speaker_prev');
+    if(!this.hasCapability('speaker_track'))
+      await this.addCapability('speaker_track');
 
     this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
     this.registerCapabilityListener('dim', this.onCapabilityDim.bind(this));
@@ -48,6 +60,12 @@ class WakeupLightDevice extends Device {
     this.setupFlowSunrisePreviewMode();
     this.registerCapabilityListener('relax_breathe', this.onCapabilityRelaxBreathe.bind(this));
     this.setupFlowRelaxBreatheMode();
+    this.registerCapabilityListener('media_input', this.onCapabilityMediaInput.bind(this));
+    this.registerCapabilityListener('volume_set', this.onCapabilityVolume.bind(this));
+    this.registerCapabilityListener('speaker_playing', this.onCapabilitySpeakerPlaying.bind(this));
+    this.registerCapabilityListener('speaker_next', this.onCapabilitySpeakerNext.bind(this));
+    this.registerCapabilityListener('speaker_prev', this.onCapabilitySpeakerPrev.bind(this));
+    this._currentRadioChannel = 1;
     this._alarmTriggeredCard = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
     this._sunsetOnTrigger = this.homey.flow.getDeviceTriggerCard('sunset_true');
     this._sunsetOffTrigger = this.homey.flow.getDeviceTriggerCard('sunset_false');
@@ -131,6 +149,7 @@ class WakeupLightDevice extends Device {
       await this.updateSunsetState();
       await this.updateRelaxBreatheState();
       await this.updateBedtimeTracking();
+      await this.updatePlayerState();
     }
     this._pollTick = (tick + 1) % 1000;
   }
@@ -287,6 +306,84 @@ class WakeupLightDevice extends Device {
     });
   }
 
+  // Audio player: source selection (FM Radio / AUX)
+  async onCapabilityMediaInput( value, opts ) {
+    await this.setCapabilityValue('media_input', value);
+    somneoapi.putPlayerSettings(this.getStoreValue('address'), { "snddv": value }).then(player => {
+      if(value === 'aux')
+        this.setCapabilityValue('speaker_track', '');
+    }).catch(e => {
+      this.log('Error on changing player source: '+e);
+    });
+  }
+
+  // Audio player: volume (Homey 0..1 maps onto the device's 0-25 scale)
+  async onCapabilityVolume( value, opts ) {
+    await this.setCapabilityValue('volume_set', value);
+    //Coalesce rapid slider changes into a single trailing device write
+    this._debounce('player_volume', () => {
+      var devVolume = Math.round(value * 25);
+      somneoapi.putPlayerSettings(this.getStoreValue('address'), { "sdvol": devVolume }).then(player => {
+        this.log(JSON.stringify(player))
+      }).catch(e => {
+        this.log('Error on changing player volume: '+e);
+      });
+    }, 400);
+  }
+
+  // Audio player: play/pause
+  async onCapabilitySpeakerPlaying( value, opts ) {
+    if(this.getCapabilityValue('media_input') === null) {
+      await this.setWarning('First select the media input source').catch(() => {});
+      await this.unsetWarning().catch(() => {});
+      await this.setCapabilityValue('speaker_playing', false);
+      return;
+    }
+    await this.setCapabilityValue('speaker_playing', value);
+    somneoapi.putPlayerSettings(this.getStoreValue('address'), { "onoff": value }).then(player => {
+      if(this.getCapabilityValue('media_input') === 'fmr' && player.sndch) {
+        this._currentRadioChannel = parseInt(player.sndch);
+        this._updateRadioTrack(player.sndch);
+      }
+    }).catch(e => {
+      this.log('Error on toggling player: '+e);
+    });
+  }
+
+  // Audio player: next FM preset (wraps 1-5)
+  async onCapabilitySpeakerNext( value, opts ) {
+    if(this.getCapabilityValue('media_input') !== 'fmr')
+      return;
+    this._currentRadioChannel = (this._currentRadioChannel >= 5) ? 1 : this._currentRadioChannel + 1;
+    this._changeRadioChannel(this._currentRadioChannel);
+  }
+
+  // Audio player: previous FM preset (wraps 1-5)
+  async onCapabilitySpeakerPrev( value, opts ) {
+    if(this.getCapabilityValue('media_input') !== 'fmr')
+      return;
+    this._currentRadioChannel = (this._currentRadioChannel <= 1) ? 5 : this._currentRadioChannel - 1;
+    this._changeRadioChannel(this._currentRadioChannel);
+  }
+
+  _changeRadioChannel(channel)
+  {
+    somneoapi.putPlayerSettings(this.getStoreValue('address'), { "sndch": String(channel) }).then(player => {
+      this._updateRadioTrack(String(channel));
+    }).catch(e => {
+      this.log('Error on changing radio channel: '+e);
+    });
+  }
+
+  //Shows the configured channel name and frequency on the track display
+  _updateRadioTrack(channel)
+  {
+    var settings = this.getSettings();
+    var name = settings['name_ch'+channel] || ('Channel '+channel);
+    var freq = settings['frequency_ch'+channel];
+    this.setCapabilityValue('speaker_track', freq ? (name+' ('+freq+' FM)') : name);
+  }
+
   async setMainLightState()
   {
     var onoff = this.getCapabilityValue('onoff');
@@ -384,6 +481,41 @@ class WakeupLightDevice extends Device {
     });
   }
 
+  //The player has no event support, so its state is read here (on connect and in the slow tier)
+  async updatePlayerState()
+  {
+    return somneoapi.getPlayerSettings(this.getStoreValue('address')).then(player => {
+      if(player.snddv === 'fmr' || player.snddv === 'aux')
+        this.setCapabilityValue('media_input', player.snddv);
+      if(player.sdvol !== undefined && player.sdvol !== null)
+        this.setCapabilityValue('volume_set', player.sdvol / 25);
+      if(player.onoff !== undefined && player.onoff !== null)
+        this.setCapabilityValue('speaker_playing', player.onoff);
+      if(player.snddv === 'fmr' && player.sndch) {
+        this._currentRadioChannel = parseInt(player.sndch);
+        this._updateRadioTrack(player.sndch);
+      }
+    }).catch(e => {
+      this.log('Error on retrieving player status: '+e);
+    });
+  }
+
+  //Reads the device's FM presets into the settings so the UI reflects what is on the device
+  async initRadioChannels()
+  {
+    somneoapi.getRadioFrequencies(this.getStoreValue('address')).then(freqs => {
+      var s = {};
+      for(var i = 1; i <= 5; i++) {
+        if(freqs[String(i)] !== undefined)
+          s['frequency_ch'+i] = parseFloat(freqs[String(i)]);
+      }
+      if(Object.keys(s).length > 0)
+        this.setSettings(s).catch(e => { this.log('Error storing radio frequencies: '+e); });
+    }).catch(e => {
+      this.log('Error on retrieving radio frequencies: '+e);
+    });
+  }
+
   async updateEvents()
   {
     //Older Somneo devices do not expose the event endpoint, stop polling once we are sure
@@ -464,6 +596,17 @@ class WakeupLightDevice extends Device {
         this.log('Error on updating Display settings: '+e);
       });
     }
+    if(changedKeys.some(k => k.indexOf('frequency_ch') === 0)) {
+      await somneoapi.putRadioFrequencies(this.getStoreValue('address'), {
+        "1": String(newSettings.frequency_ch1),
+        "2": String(newSettings.frequency_ch2),
+        "3": String(newSettings.frequency_ch3),
+        "4": String(newSettings.frequency_ch4),
+        "5": String(newSettings.frequency_ch5)
+      }).catch(e => {
+        this.log('Error on updating radio frequencies: '+e);
+      });
+    }
     if(changedKeys.includes('polling_interval')) {
       this._pollConfiguredInterval = this._num(newSettings.polling_interval, 15) * 1000;
       this._pollBaseInterval = this._pollConfiguredInterval;
@@ -516,6 +659,8 @@ class WakeupLightDevice extends Device {
     this.log('Device: '+this.getName()+' was located with address '+discoveryResult.address);
     this.setStoreValue('address',discoveryResult.address);
     this.applyDisplaySettings();
+    this.initRadioChannels();
+    this.updatePlayerState();
     // This method will be executed once when the device has been found (onDiscoveryResult returned true)
   }
 
