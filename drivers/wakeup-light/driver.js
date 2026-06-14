@@ -10,6 +10,63 @@ class WakeupLightDriver extends Driver {
    */
   async onInit() {
     this.log('Wakeup-light driver has been initialized');
+    this._registerFlowCards();
+  }
+
+  //Flow cards are registered on the driver (not per device) and scoped with args.device,
+  //so they always act on the device chosen in the flow. The alarm argument is an autocomplete
+  //populated live from the device, all via the rate-limited somneo api.
+  _registerFlowCards() {
+    const auto = (query, args) => this._alarmAutocomplete(query, args);
+
+    const trigger = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
+    trigger.registerRunListener(async (args, state) => {
+      //No specific alarm chosen (or "any") -> fire for every alarm
+      if(!args.alarm || args.alarm.id === undefined || args.alarm.id === 'any')
+        return true;
+      return Number(args.alarm.id) === Number(state.id);
+    });
+    trigger.registerArgumentAutocompleteListener('alarm', (query, args) => this._alarmAutocomplete(query, args, true));
+
+    const condition = this.homey.flow.getConditionCard('alarm_enabled');
+    condition.registerRunListener(async (args) => {
+      const alarms = await this._buildAlarms(args.device.getStoreValue('address'));
+      const match = alarms.find((a) => Number(a.id) === Number(args.alarm.id));
+      return !!(match && match.enabled);
+    });
+    condition.registerArgumentAutocompleteListener('alarm', auto);
+
+    const action = this.homey.flow.getActionCard('set_alarm_enabled');
+    action.registerRunListener(async (args) => {
+      await somneoapi.putAlarm(args.device.getStoreValue('address'), {
+        prfnr: Number(args.alarm.id),
+        prfen: args.state === 'true',
+      });
+    });
+    action.registerArgumentAutocompleteListener('alarm', auto);
+  }
+
+  //Returns alarm options for an autocomplete argument; includeAny prepends an "Any alarm" entry
+  async _alarmAutocomplete(query, args, includeAny) {
+    const results = [];
+    if(includeAny)
+      results.push({ id: 'any', name: 'Any alarm' });
+    try {
+      const alarms = await this._buildAlarms(args.device.getStoreValue('address'));
+      alarms.forEach((a) => {
+        results.push({
+          id: String(a.id),
+          name: this._fmtTime(a.hour, a.minute) + '  ·  ' + this._daysLabel(a.days) + (a.enabled ? '' : '  (off)'),
+        });
+      });
+    } catch(e) {
+      this.log('Alarm autocomplete failed: '+e);
+    }
+    if(query) {
+      const q = query.toLowerCase();
+      return results.filter((r) => r.name.toLowerCase().indexOf(q) !== -1);
+    }
+    return results;
   }
 
   /**
@@ -53,23 +110,8 @@ class WakeupLightDriver extends Driver {
     };
 
     session.setHandler('get-alarms', async () => {
-      const addr = address();
-      const states = await somneoapi.getAlarmState(addr);      // { prfen[], prfvs[], pwrsv[] }
-      const schedules = await somneoapi.getAlarmSchedules(addr); // { almhr[], almmn[], daynm[] }
-      const alarms = [];
-      let freeSlots = 0;
-      for(let i = 0; i < 16; i++) {
-        if(!states.prfvs[i]) { freeSlots++; continue; }
-        alarms.push({
-          id: i + 1,
-          enabled: !!states.prfen[i],
-          hour: schedules.almhr[i],
-          minute: schedules.almmn[i],
-          days: this._daysFromMask(schedules.daynm[i]),
-          powerWake: states.pwrsv[i * 3] === 255,
-        });
-      }
-      return { alarms, freeSlots };
+      const alarms = await this._buildAlarms(address());
+      return { alarms, freeSlots: 16 - alarms.length };
     });
 
     session.setHandler('save-alarm', async (alarm) => {
@@ -106,6 +148,40 @@ class WakeupLightDriver extends Driver {
       await somneoapi.putAlarm(address(), { prfnr: alarm.id, prfvs: false });
       return { ok: true };
     });
+  }
+
+  //Reads the used alarms from the device (shared by the repair UI and the flow autocompletes)
+  async _buildAlarms(address) {
+    if(!address)
+      throw new Error('Device has no known address yet. Make sure it is online and try again.');
+    const states = await somneoapi.getAlarmState(address);      // { prfen[], prfvs[], pwrsv[] }
+    const schedules = await somneoapi.getAlarmSchedules(address); // { almhr[], almmn[], daynm[] }
+    const alarms = [];
+    for(let i = 0; i < 16; i++) {
+      if(!states.prfvs[i]) continue;
+      alarms.push({
+        id: i + 1,
+        enabled: !!states.prfen[i],
+        hour: schedules.almhr[i],
+        minute: schedules.almmn[i],
+        days: this._daysFromMask(schedules.daynm[i]),
+        powerWake: states.pwrsv[i * 3] === 255,
+      });
+    }
+    return alarms;
+  }
+
+  _fmtTime(hour, minute) {
+    return (hour < 10 ? '0' : '') + hour + ':' + (minute < 10 ? '0' : '') + minute;
+  }
+
+  _daysLabel(days) {
+    const keys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const labels = { mon: 'Mo', tue: 'Tu', wed: 'We', thu: 'Th', fri: 'Fr', sat: 'Sa', sun: 'Su' };
+    const on = keys.filter((k) => days[k]);
+    if(on.length === 0) return 'Once';
+    if(on.length === 7) return 'Daily';
+    return on.map((k) => labels[k]).join(' ');
   }
 
   _daysFromMask(mask) {

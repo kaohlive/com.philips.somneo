@@ -37,11 +37,43 @@
         "hint": {
           "en": "When an alarm starts the wake-up sequence on the device"
         },
+        "titleFormatted": {
+          "en": "Alarm [[alarm]] goes off"
+        },
         "args": [
           {
             "type": "device",
             "name": "device",
             "filter": "driver_id=wakeup-light"
+          },
+          {
+            "type": "autocomplete",
+            "name": "alarm",
+            "title": {
+              "en": "Alarm"
+            },
+            "placeholder": {
+              "en": "Any alarm"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "alarm_id",
+            "type": "number",
+            "title": {
+              "en": "Alarm number"
+            }
+          },
+          {
+            "name": "alarm_time",
+            "type": "string",
+            "title": {
+              "en": "Alarm time"
+            },
+            "example": {
+              "en": "07:30"
+            }
           }
         ]
       },
@@ -174,7 +206,82 @@
         ]
       }
     ],
+    "conditions": [
+      {
+        "id": "alarm_enabled",
+        "title": {
+          "en": "An alarm !{{is|is not}} enabled"
+        },
+        "titleFormatted": {
+          "en": "Alarm [[alarm]] !{{is|is not}} enabled"
+        },
+        "hint": {
+          "en": "Checks whether the selected alarm is currently enabled on the device"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light"
+          },
+          {
+            "type": "autocomplete",
+            "name": "alarm",
+            "title": {
+              "en": "Alarm"
+            }
+          }
+        ]
+      }
+    ],
     "actions": [
+      {
+        "id": "set_alarm_enabled",
+        "title": {
+          "en": "Enable or disable an alarm"
+        },
+        "hint": {
+          "en": "Enables or disables the selected alarm on the device"
+        },
+        "titleFormatted": {
+          "en": "Set alarm [[alarm]] to [[state]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light"
+          },
+          {
+            "type": "autocomplete",
+            "name": "alarm",
+            "title": {
+              "en": "Alarm"
+            }
+          },
+          {
+            "type": "dropdown",
+            "name": "state",
+            "title": {
+              "en": "State"
+            },
+            "values": [
+              {
+                "id": "true",
+                "title": {
+                  "en": "Enabled"
+                }
+              },
+              {
+                "id": "false",
+                "title": {
+                  "en": "Disabled"
+                }
+              }
+            ]
+          }
+        ]
+      },
       {
         "id": "set-sunset",
         "title": {

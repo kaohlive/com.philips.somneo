@@ -557,6 +557,53 @@ class WakeupLightDevice extends Device {
     });
   }
 
+  //Fires the alarm trigger, tagging it with the alarm that most likely fired so flows can filter
+  async _onAlarmFired()
+  {
+    this.log('An alarm started the wake-up sequence');
+    var tokens = { alarm_id: 0, alarm_time: '' };
+    var state = { id: 0 };
+    try {
+      var fired = await this._guessFiredAlarm();
+      if(fired) {
+        tokens = { alarm_id: fired.id, alarm_time: this.driver._fmtTime(fired.hour, fired.minute) };
+        state = { id: fired.id };
+      }
+    } catch(e) {
+      this.log('Could not determine which alarm fired: '+e);
+    }
+    this._alarmTriggeredCard.trigger(this, tokens, state).catch(e => { this.log('Error on firing alarm trigger: '+e); });
+  }
+
+  //The device does not report which alarm fired, so infer it: the enabled alarm scheduled for
+  //today whose time is nearest now (the wake-up/sunrise starts shortly before the set time).
+  async _guessFiredAlarm()
+  {
+    var alarms = await this.driver._buildAlarms(this.getStoreValue('address'));
+    var now = new Date();
+    var nowMin = now.getHours() * 60 + now.getMinutes();
+    var jsDay = now.getDay();
+    var best = null;
+    var bestDiff = 1440;
+    alarms.forEach(a => {
+      if(!a.enabled) return;
+      if(!this._alarmAppliesToday(a.days, jsDay)) return;
+      var amin = a.hour * 60 + a.minute;
+      var diff = Math.abs(amin - nowMin);
+      if(diff > 720) diff = 1440 - diff;
+      if(diff < bestDiff) { bestDiff = diff; best = a; }
+    });
+    return best;
+  }
+
+  _alarmAppliesToday(days, jsDay)
+  {
+    var anySet = days.mon || days.tue || days.wed || days.thu || days.fri || days.sat || days.sun;
+    if(!anySet) return true; //one-time alarm
+    var keys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    return !!days[keys[jsDay]];
+  }
+
   //Translates a device event into a state change. While the event system works this replaces the
   //separate sunset/relax/bedtime polls; the slow tier only reconciles occasionally.
   _handleEvent(event)
@@ -564,8 +611,7 @@ class WakeupLightDevice extends Device {
     switch(event) {
       //'startwakeup' is sent the moment an alarm starts the wake-up sequence
       case 'startwakeup':
-        this.log('An alarm went off, firing the alarm trigger');
-        this._alarmTriggeredCard.trigger(this).catch(e => { this.log('Error on firing alarm trigger: '+e); });
+        this._onAlarmFired();
         break;
       case 'startdusk': this._setSunsetState(true); break;
       case 'enddusk': this._setSunsetState(false); break;
