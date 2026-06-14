@@ -165,6 +165,70 @@
           "en": "When the relax breathe program has started"
         },
         "$filter": "capabilities=relax_breathe"
+      },
+      {
+        "id": "bedtime_tracking_false",
+        "title": {
+          "en": "Sleep tracking is turned off"
+        },
+        "titleFormatted": {
+          "en": "Sleep tracking is turned off"
+        },
+        "hint": {
+          "en": "When sleep tracking has been turned off"
+        },
+        "$filter": "capabilities=bedtime_tracking"
+      },
+      {
+        "id": "bedtime_tracking_true",
+        "title": {
+          "en": "Sleep tracking is turned on"
+        },
+        "titleFormatted": {
+          "en": "Sleep tracking is turned on"
+        },
+        "hint": {
+          "en": "When sleep tracking has been turned on"
+        },
+        "$filter": "capabilities=bedtime_tracking"
+      },
+      {
+        "id": "media_input_changed",
+        "title": {
+          "en": "The audio source changed"
+        },
+        "titleFormatted": {
+          "en": "The audio source changed to [[source]]"
+        },
+        "hint": {
+          "en": "When the audio source switches (FM Radio / AUX)"
+        },
+        "args": [
+          {
+            "type": "dropdown",
+            "name": "source",
+            "title": {
+              "en": "Source"
+            },
+            "values": [
+              { "id": "any", "title": { "en": "Any source" } },
+              { "id": "fmr", "title": { "en": "FM Radio" } },
+              { "id": "aux", "title": { "en": "AUX" } }
+            ]
+          }
+        ],
+        "tokens": [
+          {
+            "name": "source",
+            "type": "string",
+            "title": {
+              "en": "Source"
+            },
+            "example": {
+              "en": "FM Radio"
+            }
+          }
+        ]
       }
     ],
     "conditions": [

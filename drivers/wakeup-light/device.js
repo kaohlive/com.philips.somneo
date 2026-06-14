@@ -85,6 +85,9 @@ class WakeupLightDevice extends Device {
     this._sunriseOffTrigger = this.homey.flow.getDeviceTriggerCard('sunrise_preview_false');
     this._relaxOnTrigger = this.homey.flow.getDeviceTriggerCard('relax_breathe_true');
     this._relaxOffTrigger = this.homey.flow.getDeviceTriggerCard('relax_breathe_false');
+    this._bedtimeOnTrigger = this.homey.flow.getDeviceTriggerCard('bedtime_tracking_true');
+    this._bedtimeOffTrigger = this.homey.flow.getDeviceTriggerCard('bedtime_tracking_false');
+    this._mediaInputTrigger = this.homey.flow.getDeviceTriggerCard('media_input_changed');
   }
 
   //Reads a setting as an integer, falling back to a default when it is not set yet
@@ -341,7 +344,7 @@ class WakeupLightDevice extends Device {
 
   // Audio player: source selection (FM Radio / AUX)
   async onCapabilityMediaInput( value, opts ) {
-    await this.setCapabilityValue('media_input', value);
+    this._setMediaInput(value);
     somneoapi.putPlayerSettings(this.getStoreValue('address'), { "snddv": value }).then(player => {
       if(value === 'aux')
         this._set('speaker_track', '');
@@ -484,7 +487,27 @@ class WakeupLightDevice extends Device {
 
   _setBedtimeState(active)
   {
+    var prev = this.getCapabilityValue('bedtime_tracking');
     this._set('bedtime_tracking', active);
+    if(prev !== null && prev !== undefined && prev !== active) {
+      if(active)
+        this._bedtimeOnTrigger.trigger(this).catch(e => { this.log('Error on firing bedtime_tracking_true: '+e); });
+      else
+        this._bedtimeOffTrigger.trigger(this).catch(e => { this.log('Error on firing bedtime_tracking_false: '+e); });
+    }
+  }
+
+  //Sets the audio source capability and fires the changed trigger on an actual change
+  _setMediaInput(source)
+  {
+    if(source !== 'fmr' && source !== 'aux')
+      return;
+    var prev = this.getCapabilityValue('media_input');
+    this._set('media_input', source);
+    if(prev !== null && prev !== undefined && prev !== source) {
+      var label = (source === 'fmr') ? 'FM Radio' : 'AUX';
+      this._mediaInputTrigger.trigger(this, { source: label }, { source: source }).catch(e => { this.log('Error on firing media_input_changed: '+e); });
+    }
   }
 
   async updateSunsetState()
@@ -519,7 +542,7 @@ class WakeupLightDevice extends Device {
   {
     return somneoapi.getPlayerSettings(this.getStoreValue('address')).then(player => {
       if(player.snddv === 'fmr' || player.snddv === 'aux')
-        this._set('media_input', player.snddv);
+        this._setMediaInput(player.snddv);
       if(player.sdvol !== undefined && player.sdvol !== null)
         this._set('volume_set', player.sdvol / 25);
       this._set('speaker_playing', player.onoff);

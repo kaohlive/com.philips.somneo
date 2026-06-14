@@ -43,5 +43,8 @@
   },
   "2.0.9": {
     "en": "Added a flow action to set the audio source (FM/AUX), a condition to check the audio source, and an 'active alarm' option to the mode condition."
+  },
+  "2.0.10": {
+    "en": "Added flow triggers for sleep tracking turning on/off and for the audio source changing (with the new source as a tag)."
   }
 }

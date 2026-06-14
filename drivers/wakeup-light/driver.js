@@ -34,6 +34,9 @@ class WakeupLightDriver extends Driver {
     ended.registerRunListener(async (args, state) => filterMatch(args, state));
     ended.registerArgumentAutocompleteListener('alarm', (query, args) => this._alarmAutocomplete(query, args, true));
 
+    const mediaChanged = this.homey.flow.getDeviceTriggerCard('media_input_changed');
+    mediaChanged.registerRunListener(async (args, state) => args.source === 'any' || args.source === state.source);
+
     const condition = this.homey.flow.getConditionCard('alarm_enabled');
     condition.registerRunListener(async (args) => {
       const alarms = await this._buildAlarms(args.device.getStoreValue('address'));
