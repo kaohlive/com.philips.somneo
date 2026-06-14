@@ -37,5 +37,8 @@
   },
   "2.0.7": {
     "en": "The 'Active alarm' (dismiss) and 'Sleep tracking' controls are now on/off switches, like the main light, instead of quick-action buttons."
+  },
+  "2.0.8": {
+    "en": "Added a flow action to turn sleep tracking on or off (it was the only switch without one)."
   }
 }

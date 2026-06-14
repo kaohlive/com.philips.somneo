@@ -375,6 +375,31 @@
                 }
               }
             ]
+          },
+          {
+            "id": "set-bedtime-tracking",
+            "title": {
+              "en": "Set sleep tracking"
+            },
+            "hint": {
+              "en": "Turns sleep tracking on or off"
+            },
+            "titleFormatted": {
+              "en": "Turns sleep tracking on or off: [[mode]]"
+            },
+            "$filter": "capabilities=bedtime_tracking",
+            "args": [
+              {
+                "type": "checkbox",
+                "name": "mode",
+                "title": {
+                  "en": "On"
+                },
+                "placeholder": {
+                  "en": "yes"
+                }
+              }
+            ]
           }
          ]
 }

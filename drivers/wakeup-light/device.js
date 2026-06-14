@@ -64,6 +64,7 @@ class WakeupLightDevice extends Device {
     this.registerCapabilityListener('sunset', this.onCapabilitySunset.bind(this));
     this.setupFlowSunsetMode();
     this.registerCapabilityListener('bedtime_tracking', this.onCapabilityBedtimeTracking.bind(this));
+    this.setupFlowBedtimeTrackingMode();
     this.registerCapabilityListener('sunrise_preview', this.onCapabilitySunrisePreview.bind(this));
     this.setupFlowSunrisePreviewMode();
     this.registerCapabilityListener('relax_breathe', this.onCapabilityRelaxBreathe.bind(this));
@@ -790,6 +791,22 @@ class WakeupLightDevice extends Device {
         return new Promise((resolve, reject) => {
           this.log('now send the capability command');
           args.device.onCapabilitySunset(args.start).then(() => {
+            resolve(true);
+          }, (_error) => {
+            reject(_error);
+          });
+        });
+      });
+  }
+
+  async setupFlowBedtimeTrackingMode()
+  {
+    this._setBedtimeTrackingMode = await this.homey.flow.getActionCard('set-bedtime-tracking');
+    this._setBedtimeTrackingMode
+      .registerRunListener(async (args, state) => {
+        this.log('attempt to set sleep tracking mode: '+JSON.stringify(args.mode));
+        return new Promise((resolve, reject) => {
+          args.device.onCapabilityBedtimeTracking(args.mode).then(() => {
             resolve(true);
           }, (_error) => {
             reject(_error);
