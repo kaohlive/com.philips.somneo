@@ -40,5 +40,8 @@
   },
   "2.0.8": {
     "en": "Added a flow action to turn sleep tracking on or off (it was the only switch without one)."
+  },
+  "2.0.9": {
+    "en": "Added a flow action to set the audio source (FM/AUX), a condition to check the audio source, and an 'active alarm' option to the mode condition."
   }
 }

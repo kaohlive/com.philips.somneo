@@ -71,6 +71,7 @@ class WakeupLightDevice extends Device {
     this.setupFlowRelaxBreatheMode();
     this.registerCapabilityListener('alarm_active', this.onCapabilityAlarmActive.bind(this));
     this.registerCapabilityListener('media_input', this.onCapabilityMediaInput.bind(this));
+    this.setupFlowMediaInputMode();
     this.registerCapabilityListener('volume_set', this.onCapabilityVolume.bind(this));
     this.registerCapabilityListener('speaker_playing', this.onCapabilitySpeakerPlaying.bind(this));
     this.registerCapabilityListener('speaker_next', this.onCapabilitySpeakerNext.bind(this));
@@ -791,6 +792,22 @@ class WakeupLightDevice extends Device {
         return new Promise((resolve, reject) => {
           this.log('now send the capability command');
           args.device.onCapabilitySunset(args.start).then(() => {
+            resolve(true);
+          }, (_error) => {
+            reject(_error);
+          });
+        });
+      });
+  }
+
+  async setupFlowMediaInputMode()
+  {
+    this._setMediaInputMode = await this.homey.flow.getActionCard('set-media-input');
+    this._setMediaInputMode
+      .registerRunListener(async (args, state) => {
+        this.log('attempt to set audio source: '+JSON.stringify(args.source));
+        return new Promise((resolve, reject) => {
+          args.device.onCapabilityMediaInput(args.source).then(() => {
             resolve(true);
           }, (_error) => {
             reject(_error);

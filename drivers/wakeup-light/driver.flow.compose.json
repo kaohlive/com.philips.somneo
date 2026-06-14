@@ -192,7 +192,33 @@
               { "id": "sunset", "title": { "en": "Sunset" } },
               { "id": "sunrise_preview", "title": { "en": "Sunrise preview" } },
               { "id": "relax_breathe", "title": { "en": "Relax breathe" } },
-              { "id": "bedtime_tracking", "title": { "en": "Sleep tracking" } }
+              { "id": "bedtime_tracking", "title": { "en": "Sleep tracking" } },
+              { "id": "alarm_active", "title": { "en": "Active alarm" } }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "media_input_is",
+        "title": {
+          "en": "The audio source !{{is|is not}} the selected one"
+        },
+        "titleFormatted": {
+          "en": "The audio source !{{is|is not}} [[source]]"
+        },
+        "hint": {
+          "en": "Checks which audio source is currently selected"
+        },
+        "args": [
+          {
+            "type": "dropdown",
+            "name": "source",
+            "title": {
+              "en": "Source"
+            },
+            "values": [
+              { "id": "fmr", "title": { "en": "FM Radio" } },
+              { "id": "aux", "title": { "en": "AUX" } }
             ]
           }
         ]
@@ -398,6 +424,32 @@
                 "placeholder": {
                   "en": "yes"
                 }
+              }
+            ]
+          },
+          {
+            "id": "set-media-input",
+            "title": {
+              "en": "Set audio source"
+            },
+            "hint": {
+              "en": "Switches the audio source of the wake-up light"
+            },
+            "titleFormatted": {
+              "en": "Set the audio source to [[source]]"
+            },
+            "$filter": "capabilities=media_input",
+            "args": [
+              {
+                "type": "dropdown",
+                "name": "source",
+                "title": {
+                  "en": "Source"
+                },
+                "values": [
+                  { "id": "fmr", "title": { "en": "FM Radio" } },
+                  { "id": "aux", "title": { "en": "AUX" } }
+                ]
               }
             ]
           }

@@ -52,6 +52,9 @@ class WakeupLightDriver extends Driver {
     const modeCondition = this.homey.flow.getConditionCard('mode_enabled');
     modeCondition.registerRunListener(async (args) => !!args.device.getCapabilityValue(args.mode));
 
+    const mediaCondition = this.homey.flow.getConditionCard('media_input_is');
+    mediaCondition.registerRunListener(async (args) => args.device.getCapabilityValue('media_input') === args.source);
+
     const action = this.homey.flow.getActionCard('set_alarm_enabled');
     action.registerRunListener(async (args) => {
       await somneoapi.putAlarm(args.device.getStoreValue('address'), {
