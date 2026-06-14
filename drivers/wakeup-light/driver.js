@@ -62,11 +62,7 @@ class WakeupLightDriver extends Driver {
     action.registerArgumentAutocompleteListener('alarm', auto);
 
     const stop = this.homey.flow.getActionCard('stop_wakeup');
-    stop.registerRunListener(async (args) => {
-      const addr = args.device.getStoreValue('address');
-      await somneoapi.putMainLightState(addr, false, 0, false, false);
-      await somneoapi.putPlayerSettings(addr, { onoff: false });
-    });
+    stop.registerRunListener(async (args) => args.device.dismissWakeup());
   }
 
   //Returns alarm options for an autocomplete argument; includeAny prepends an "Any alarm" entry

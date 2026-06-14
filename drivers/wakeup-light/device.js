@@ -52,6 +52,10 @@ class WakeupLightDevice extends Device {
       await this.addCapability('alarm_connectivity');
     if(this.getCapabilityValue('alarm_connectivity') === null)
       this._set('alarm_connectivity', false);
+    if(!this.hasCapability('alarm_active'))
+      await this.addCapability('alarm_active');
+    if(this.getCapabilityValue('alarm_active') === null)
+      this._set('alarm_active', false);
 
     this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
     this.registerCapabilityListener('dim', this.onCapabilityDim.bind(this));
@@ -64,6 +68,7 @@ class WakeupLightDevice extends Device {
     this.setupFlowSunrisePreviewMode();
     this.registerCapabilityListener('relax_breathe', this.onCapabilityRelaxBreathe.bind(this));
     this.setupFlowRelaxBreatheMode();
+    this.registerCapabilityListener('alarm_active', this.onCapabilityAlarmActive.bind(this));
     this.registerCapabilityListener('media_input', this.onCapabilityMediaInput.bind(this));
     this.registerCapabilityListener('volume_set', this.onCapabilityVolume.bind(this));
     this.registerCapabilityListener('speaker_playing', this.onCapabilitySpeakerPlaying.bind(this));
@@ -570,6 +575,21 @@ class WakeupLightDevice extends Device {
     });
   }
 
+  //The 'Active alarm' button: it turns true when an alarm goes off; tapping it to false (or
+  //trying to set it true by hand) dismisses the running wake-up. You cannot arm an alarm here.
+  async onCapabilityAlarmActive( value, opts ) {
+    await this.setCapabilityValue('alarm_active', false);
+    if(value === false)
+      await this.dismissWakeup();
+  }
+
+  //Dismisses a running wake-up by turning off the light and the sound (shared with the flow action)
+  async dismissWakeup() {
+    var addr = this.getStoreValue('address');
+    await somneoapi.putMainLightState(addr, false, 0, false, false);
+    await somneoapi.putPlayerSettings(addr, { "onoff": false });
+  }
+
   //Fires an alarm trigger card, tagging it with the alarm that most likely fired so flows can filter
   async _fireAlarmCard(card, label)
   {
@@ -624,10 +644,16 @@ class WakeupLightDevice extends Device {
     switch(event) {
       //'startwakeup' is sent the moment an alarm starts the wake-up sequence
       case 'startwakeup':
+        this._set('alarm_active', true);
         this._fireAlarmCard(this._alarmTriggeredCard, 'An alarm started the wake-up sequence');
         break;
       case 'endwakeup':
+        this._set('alarm_active', false);
         this._fireAlarmCard(this._alarmEndedCard, 'An alarm wake-up sequence ended');
+        break;
+      //'endalarm' is sent when a sounding alarm is dismissed on the device
+      case 'endalarm':
+        this._set('alarm_active', false);
         break;
       case 'startdusk': this._setSunsetState(true); break;
       case 'enddusk': this._setSunsetState(false); break;

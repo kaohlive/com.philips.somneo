@@ -1,0 +1,11 @@
+{
+    "type": "boolean",
+    "title": { "en": "Active alarm" },
+    "insights": true,
+    "insightsTitleTrue": { "en": "An alarm went off" },
+    "insightsTitleFalse": { "en": "The alarm was dismissed or ended" },
+    "getable": true,
+    "setable": true,
+    "uiComponent": "button",
+    "uiQuickAction": true
+  }

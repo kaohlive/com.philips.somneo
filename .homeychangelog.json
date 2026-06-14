@@ -28,5 +28,8 @@
   },
   "2.0.4": {
     "en": "Connectivity is now also reported through the standard connectivity-alarm capability, giving a connectivity indicator on the device, Insights logging and the built-in connectivity flow cards."
+  },
+  "2.0.5": {
+    "en": "Added an 'Active alarm' quick-action button: it turns on when an alarm goes off, and tapping it dismisses the running wake-up (turns off the light and sound)."
   }
 }
