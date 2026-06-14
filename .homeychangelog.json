@@ -31,5 +31,8 @@
   },
   "2.0.5": {
     "en": "Added an 'Active alarm' quick-action button: it turns on when an alarm goes off, and tapping it dismisses the running wake-up (turns off the light and sound)."
+  },
+  "2.0.6": {
+    "en": "Fixed: a device could stay marked unavailable even when it was reachable again (for example after restarting the app). It now becomes available again on the first successful poll."
   }
 }

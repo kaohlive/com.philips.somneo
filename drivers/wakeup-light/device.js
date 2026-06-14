@@ -126,19 +126,22 @@ class WakeupLightDevice extends Device {
   //the first success restores normal cadence and availability.
   _reportHealth(ok) {
     if(ok) {
-      if(this._consecutiveFailures > 0) {
-        this._consecutiveFailures = 0;
-        this._eventFailures = 0;
-        this._pollBaseInterval = this._pollConfiguredInterval || 15000;
+      //Any successful request means the device is reachable: clear failure state and make sure
+      //it is marked available. Not gated on a prior failure, so a device that is remembered as
+      //unavailable (e.g. after an app restart) recovers on the first good poll.
+      this._consecutiveFailures = 0;
+      this._eventFailures = 0;
+      this._pollBaseInterval = this._pollConfiguredInterval || 15000;
+      if(this.getCapabilityValue('alarm_connectivity'))
         this._set('alarm_connectivity', false);
-        if(!this.getAvailable())
-          this.setAvailable().catch(() => {});
-      }
+      if(!this.getAvailable())
+        this.setAvailable().catch(() => {});
       return;
     }
     this._consecutiveFailures = (this._consecutiveFailures || 0) + 1;
     if(this._consecutiveFailures >= 3) {
-      this._set('alarm_connectivity', true);
+      if(!this.getCapabilityValue('alarm_connectivity'))
+        this._set('alarm_connectivity', true);
       if(this.getAvailable())
         this.setUnavailable('Device unreachable').catch(() => {});
       this._pollBaseInterval = Math.min(this._pollBaseInterval * 2, 120000);
