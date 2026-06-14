@@ -1,6 +1,30 @@
 {
     "triggers": [
       {
+        "id": "device_unreachable",
+        "title": {
+          "en": "The device becomes unreachable"
+        },
+        "titleFormatted": {
+          "en": "The device becomes unreachable"
+        },
+        "hint": {
+          "en": "When the app can no longer reach the device on the network"
+        }
+      },
+      {
+        "id": "device_reachable",
+        "title": {
+          "en": "The device becomes reachable"
+        },
+        "titleFormatted": {
+          "en": "The device becomes reachable"
+        },
+        "hint": {
+          "en": "When the app can reach the device again after it was unreachable"
+        }
+      },
+      {
         "id": "alarm_triggered",
         "title": {
           "en": "An alarm goes off"
@@ -168,6 +192,18 @@
       }
     ],
     "conditions": [
+      {
+        "id": "device_reachable",
+        "title": {
+          "en": "The device !{{is|is not}} reachable"
+        },
+        "titleFormatted": {
+          "en": "The device !{{is|is not}} reachable"
+        },
+        "hint": {
+          "en": "Whether the app can currently reach the device. Use this to guard light/audio actions."
+        }
+      },
       {
         "id": "mode_enabled",
         "title": {

@@ -68,6 +68,8 @@ class WakeupLightDevice extends Device {
     this._currentRadioChannel = 1;
     this._alarmTriggeredCard = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
     this._alarmEndedCard = this.homey.flow.getDeviceTriggerCard('alarm_ended');
+    this._unreachableTrigger = this.homey.flow.getDeviceTriggerCard('device_unreachable');
+    this._reachableTrigger = this.homey.flow.getDeviceTriggerCard('device_reachable');
     this._sunsetOnTrigger = this.homey.flow.getDeviceTriggerCard('sunset_true');
     this._sunsetOffTrigger = this.homey.flow.getDeviceTriggerCard('sunset_false');
     this._sunriseOnTrigger = this.homey.flow.getDeviceTriggerCard('sunrise_preview_true');
@@ -119,16 +121,21 @@ class WakeupLightDevice extends Device {
     if(ok) {
       if(this._consecutiveFailures > 0) {
         this._consecutiveFailures = 0;
+        this._eventFailures = 0;
         this._pollBaseInterval = this._pollConfiguredInterval || 15000;
-        if(!this.getAvailable())
+        if(!this.getAvailable()) {
           this.setAvailable().catch(() => {});
+          this._reachableTrigger.trigger(this).catch(() => {});
+        }
       }
       return;
     }
     this._consecutiveFailures = (this._consecutiveFailures || 0) + 1;
     if(this._consecutiveFailures >= 3) {
-      if(this.getAvailable())
+      if(this.getAvailable()) {
         this.setUnavailable('Device unreachable').catch(() => {});
+        this._unreachableTrigger.trigger(this).catch(() => {});
+      }
       this._pollBaseInterval = Math.min(this._pollBaseInterval * 2, 120000);
     }
   }
@@ -549,6 +556,11 @@ class WakeupLightDevice extends Device {
         this._handleEvent(event);
       }
     }).catch(e => {
+      //When the whole device is unreachable, don't blame the event endpoint (that would
+      //permanently disable alarm detection after a temporary outage). Only count failures
+      //while the device is otherwise responding.
+      if(this._consecutiveFailures > 0)
+        return;
       this._eventFailures = (this._eventFailures || 0) + 1;
       this.log('Error on retrieving device events ('+this._eventFailures+'): '+e);
       if(this._eventFailures >= 3) {
