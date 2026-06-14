@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.philips.somneo",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "compatibility": ">=5.0.0",
   "brandColor": "#4C3628",
   "sdk": 3,
@@ -39,6 +39,54 @@
         },
         "titleFormatted": {
           "en": "Alarm [[alarm]] goes off"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light"
+          },
+          {
+            "type": "autocomplete",
+            "name": "alarm",
+            "title": {
+              "en": "Alarm"
+            },
+            "placeholder": {
+              "en": "Any alarm"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "alarm_id",
+            "type": "number",
+            "title": {
+              "en": "Alarm number"
+            }
+          },
+          {
+            "name": "alarm_time",
+            "type": "string",
+            "title": {
+              "en": "Alarm time"
+            },
+            "example": {
+              "en": "07:30"
+            }
+          }
+        ]
+      },
+      {
+        "id": "alarm_ended",
+        "title": {
+          "en": "An alarm ends"
+        },
+        "hint": {
+          "en": "When the wake-up sequence of an alarm finishes"
+        },
+        "titleFormatted": {
+          "en": "Alarm [[alarm]] ends"
         },
         "args": [
           {
@@ -208,6 +256,89 @@
     ],
     "conditions": [
       {
+        "id": "mode_enabled",
+        "title": {
+          "en": "A mode !{{is|is not}} on"
+        },
+        "titleFormatted": {
+          "en": "[[mode]] !{{is|is not}} on"
+        },
+        "hint": {
+          "en": "Checks whether one of the device's modes is currently on"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light"
+          },
+          {
+            "type": "dropdown",
+            "name": "mode",
+            "title": {
+              "en": "Mode"
+            },
+            "values": [
+              {
+                "id": "onoff",
+                "title": {
+                  "en": "Main light"
+                }
+              },
+              {
+                "id": "nightlight",
+                "title": {
+                  "en": "Night light"
+                }
+              },
+              {
+                "id": "sunset",
+                "title": {
+                  "en": "Sunset"
+                }
+              },
+              {
+                "id": "sunrise_preview",
+                "title": {
+                  "en": "Sunrise preview"
+                }
+              },
+              {
+                "id": "relax_breathe",
+                "title": {
+                  "en": "Relax breathe"
+                }
+              },
+              {
+                "id": "bedtime_tracking",
+                "title": {
+                  "en": "Sleep tracking"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "any_alarm_enabled",
+        "title": {
+          "en": "Any alarm !{{is|is not}} enabled"
+        },
+        "titleFormatted": {
+          "en": "Any alarm !{{is|is not}} enabled"
+        },
+        "hint": {
+          "en": "True when at least one alarm is enabled on the device"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light"
+          }
+        ]
+      },
+      {
         "id": "alarm_enabled",
         "title": {
           "en": "An alarm !{{is|is not}} enabled"
@@ -235,6 +366,25 @@
       }
     ],
     "actions": [
+      {
+        "id": "stop_wakeup",
+        "title": {
+          "en": "Stop the running wake-up"
+        },
+        "titleFormatted": {
+          "en": "Stop the running wake-up"
+        },
+        "hint": {
+          "en": "Dismisses a sounding alarm by turning off the light and the sound"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=wakeup-light"
+          }
+        ]
+      },
       {
         "id": "set_alarm_enabled",
         "title": {

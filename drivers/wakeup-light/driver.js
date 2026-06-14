@@ -19,14 +19,20 @@ class WakeupLightDriver extends Driver {
   _registerFlowCards() {
     const auto = (query, args) => this._alarmAutocomplete(query, args);
 
-    const trigger = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
-    trigger.registerRunListener(async (args, state) => {
+    const filterMatch = (args, state) => {
       //No specific alarm chosen (or "any") -> fire for every alarm
       if(!args.alarm || args.alarm.id === undefined || args.alarm.id === 'any')
         return true;
       return Number(args.alarm.id) === Number(state.id);
-    });
-    trigger.registerArgumentAutocompleteListener('alarm', (query, args) => this._alarmAutocomplete(query, args, true));
+    };
+
+    const triggered = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
+    triggered.registerRunListener(async (args, state) => filterMatch(args, state));
+    triggered.registerArgumentAutocompleteListener('alarm', (query, args) => this._alarmAutocomplete(query, args, true));
+
+    const ended = this.homey.flow.getDeviceTriggerCard('alarm_ended');
+    ended.registerRunListener(async (args, state) => filterMatch(args, state));
+    ended.registerArgumentAutocompleteListener('alarm', (query, args) => this._alarmAutocomplete(query, args, true));
 
     const condition = this.homey.flow.getConditionCard('alarm_enabled');
     condition.registerRunListener(async (args) => {
@@ -36,6 +42,16 @@ class WakeupLightDriver extends Driver {
     });
     condition.registerArgumentAutocompleteListener('alarm', auto);
 
+    const anyAlarm = this.homey.flow.getConditionCard('any_alarm_enabled');
+    anyAlarm.registerRunListener(async (args) => {
+      const alarms = await this._buildAlarms(args.device.getStoreValue('address'));
+      return alarms.some((a) => a.enabled);
+    });
+
+    //Mode conditions read the cached capability value, so they add no device traffic
+    const modeCondition = this.homey.flow.getConditionCard('mode_enabled');
+    modeCondition.registerRunListener(async (args) => !!args.device.getCapabilityValue(args.mode));
+
     const action = this.homey.flow.getActionCard('set_alarm_enabled');
     action.registerRunListener(async (args) => {
       await somneoapi.putAlarm(args.device.getStoreValue('address'), {
@@ -44,6 +60,13 @@ class WakeupLightDriver extends Driver {
       });
     });
     action.registerArgumentAutocompleteListener('alarm', auto);
+
+    const stop = this.homey.flow.getActionCard('stop_wakeup');
+    stop.registerRunListener(async (args) => {
+      const addr = args.device.getStoreValue('address');
+      await somneoapi.putMainLightState(addr, false, 0, false, false);
+      await somneoapi.putPlayerSettings(addr, { onoff: false });
+    });
   }
 
   //Returns alarm options for an autocomplete argument; includeAny prepends an "Any alarm" entry

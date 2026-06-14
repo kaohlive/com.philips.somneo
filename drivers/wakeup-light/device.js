@@ -67,6 +67,7 @@ class WakeupLightDevice extends Device {
     this.registerCapabilityListener('speaker_prev', this.onCapabilitySpeakerPrev.bind(this));
     this._currentRadioChannel = 1;
     this._alarmTriggeredCard = this.homey.flow.getDeviceTriggerCard('alarm_triggered');
+    this._alarmEndedCard = this.homey.flow.getDeviceTriggerCard('alarm_ended');
     this._sunsetOnTrigger = this.homey.flow.getDeviceTriggerCard('sunset_true');
     this._sunsetOffTrigger = this.homey.flow.getDeviceTriggerCard('sunset_false');
     this._sunriseOnTrigger = this.homey.flow.getDeviceTriggerCard('sunrise_preview_true');
@@ -557,10 +558,10 @@ class WakeupLightDevice extends Device {
     });
   }
 
-  //Fires the alarm trigger, tagging it with the alarm that most likely fired so flows can filter
-  async _onAlarmFired()
+  //Fires an alarm trigger card, tagging it with the alarm that most likely fired so flows can filter
+  async _fireAlarmCard(card, label)
   {
-    this.log('An alarm started the wake-up sequence');
+    this.log(label);
     var tokens = { alarm_id: 0, alarm_time: '' };
     var state = { id: 0 };
     try {
@@ -572,7 +573,7 @@ class WakeupLightDevice extends Device {
     } catch(e) {
       this.log('Could not determine which alarm fired: '+e);
     }
-    this._alarmTriggeredCard.trigger(this, tokens, state).catch(e => { this.log('Error on firing alarm trigger: '+e); });
+    card.trigger(this, tokens, state).catch(e => { this.log('Error on firing alarm trigger: '+e); });
   }
 
   //The device does not report which alarm fired, so infer it: the enabled alarm scheduled for
@@ -611,7 +612,10 @@ class WakeupLightDevice extends Device {
     switch(event) {
       //'startwakeup' is sent the moment an alarm starts the wake-up sequence
       case 'startwakeup':
-        this._onAlarmFired();
+        this._fireAlarmCard(this._alarmTriggeredCard, 'An alarm started the wake-up sequence');
+        break;
+      case 'endwakeup':
+        this._fireAlarmCard(this._alarmEndedCard, 'An alarm wake-up sequence ended');
         break;
       case 'startdusk': this._setSunsetState(true); break;
       case 'enddusk': this._setSunsetState(false); break;

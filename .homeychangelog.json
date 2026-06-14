@@ -19,5 +19,8 @@
   },
   "2.0.1": {
     "en": "Manage your device's alarms (view, create, edit, enable and delete) from the new screen under the device's Repair option. Also more robust against devices that return incomplete data."
+  },
+  "2.0.2": {
+    "en": "New flow cards: trigger when an alarm goes off or ends (filter by a specific alarm, with alarm number and time tokens), conditions for whether an alarm or a device mode is on, and actions to enable/disable an alarm or stop a running wake-up."
   }
 }
