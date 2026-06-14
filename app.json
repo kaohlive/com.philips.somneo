@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.philips.somneo",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "compatibility": ">=5.0.0",
   "brandColor": "#4C3628",
   "sdk": 3,
@@ -307,6 +307,40 @@
         "measure_temperature",
         "onoff"
       ],
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "images": {
+        "small": "/drivers/wakeup-light/assets/images/small.png",
+        "large": "/drivers/wakeup-light/assets/images/large.png",
+        "xlarge": "/drivers/wakeup-light/assets/images/xlarge.png"
+      },
+      "discovery": "SSDP",
+      "pair": [
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "options": {
+            "singular": true
+          },
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "repair": [
+        {
+          "id": "alarms"
+        }
+      ],
+      "id": "wakeup-light",
       "settings": [
         {
           "type": "group",
@@ -403,10 +437,30 @@
               },
               "value": "0",
               "values": [
-                { "id": "0", "label": { "en": "Sunny Day" } },
-                { "id": "1", "label": { "en": "Island Red" } },
-                { "id": "2", "label": { "en": "Nordic White" } },
-                { "id": "3", "label": { "en": "Caribbean Red" } }
+                {
+                  "id": "0",
+                  "label": {
+                    "en": "Sunny Day"
+                  }
+                },
+                {
+                  "id": "1",
+                  "label": {
+                    "en": "Island Red"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": {
+                    "en": "Nordic White"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": {
+                    "en": "Caribbean Red"
+                  }
+                }
               ]
             },
             {
@@ -417,13 +471,48 @@
               },
               "value": "off",
               "values": [
-                { "id": "off", "label": { "en": "No sound" } },
-                { "id": "1", "label": { "en": "Soft Rain" } },
-                { "id": "2", "label": { "en": "Ocean Waves" } },
-                { "id": "3", "label": { "en": "Under Water" } },
-                { "id": "4", "label": { "en": "Summer Lake" } },
-                { "id": "fmr", "label": { "en": "FM Radio" } },
-                { "id": "aux", "label": { "en": "AUX Input" } }
+                {
+                  "id": "off",
+                  "label": {
+                    "en": "No sound"
+                  }
+                },
+                {
+                  "id": "1",
+                  "label": {
+                    "en": "Soft Rain"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": {
+                    "en": "Ocean Waves"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": {
+                    "en": "Under Water"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": {
+                    "en": "Summer Lake"
+                  }
+                },
+                {
+                  "id": "fmr",
+                  "label": {
+                    "en": "FM Radio"
+                  }
+                },
+                {
+                  "id": "aux",
+                  "label": {
+                    "en": "AUX Input"
+                  }
+                }
               ]
             },
             {
@@ -434,11 +523,36 @@
               },
               "value": "1",
               "values": [
-                { "id": "1", "label": { "en": "Channel 1" } },
-                { "id": "2", "label": { "en": "Channel 2" } },
-                { "id": "3", "label": { "en": "Channel 3" } },
-                { "id": "4", "label": { "en": "Channel 4" } },
-                { "id": "5", "label": { "en": "Channel 5" } }
+                {
+                  "id": "1",
+                  "label": {
+                    "en": "Channel 1"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": {
+                    "en": "Channel 2"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": {
+                    "en": "Channel 3"
+                  }
+                },
+                {
+                  "id": "4",
+                  "label": {
+                    "en": "Channel 4"
+                  }
+                },
+                {
+                  "id": "5",
+                  "label": {
+                    "en": "Channel 5"
+                  }
+                }
               ]
             },
             {
@@ -467,10 +581,30 @@
               },
               "value": "0",
               "values": [
-                { "id": "0", "label": { "en": "Sunny Day" } },
-                { "id": "1", "label": { "en": "Island Red" } },
-                { "id": "2", "label": { "en": "Nordic White" } },
-                { "id": "3", "label": { "en": "Caribbean Red" } }
+                {
+                  "id": "0",
+                  "label": {
+                    "en": "Sunny Day"
+                  }
+                },
+                {
+                  "id": "1",
+                  "label": {
+                    "en": "Island Red"
+                  }
+                },
+                {
+                  "id": "2",
+                  "label": {
+                    "en": "Nordic White"
+                  }
+                },
+                {
+                  "id": "3",
+                  "label": {
+                    "en": "Caribbean Red"
+                  }
+                }
               ]
             }
           ]
@@ -520,8 +654,18 @@
               },
               "value": "0",
               "values": [
-                { "id": "0", "label": { "en": "Light" } },
-                { "id": "1", "label": { "en": "Sound" } }
+                {
+                  "id": "0",
+                  "label": {
+                    "en": "Light"
+                  }
+                },
+                {
+                  "id": "1",
+                  "label": {
+                    "en": "Sound"
+                  }
+                }
               ]
             },
             {
@@ -557,69 +701,122 @@
             "en": "Name and tune the five FM presets. Use the next/previous buttons on the device to switch between them."
           },
           "children": [
-            { "id": "name_ch1", "type": "text", "label": { "en": "Channel 1 name" }, "value": "Channel 1" },
-            { "id": "frequency_ch1", "type": "number", "label": { "en": "Channel 1 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } },
-            { "id": "name_ch2", "type": "text", "label": { "en": "Channel 2 name" }, "value": "Channel 2" },
-            { "id": "frequency_ch2", "type": "number", "label": { "en": "Channel 2 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } },
-            { "id": "name_ch3", "type": "text", "label": { "en": "Channel 3 name" }, "value": "Channel 3" },
-            { "id": "frequency_ch3", "type": "number", "label": { "en": "Channel 3 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } },
-            { "id": "name_ch4", "type": "text", "label": { "en": "Channel 4 name" }, "value": "Channel 4" },
-            { "id": "frequency_ch4", "type": "number", "label": { "en": "Channel 4 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } },
-            { "id": "name_ch5", "type": "text", "label": { "en": "Channel 5 name" }, "value": "Channel 5" },
-            { "id": "frequency_ch5", "type": "number", "label": { "en": "Channel 5 frequency" }, "value": 100, "min": 87.5, "max": 108, "step": 0.05, "units": { "en": "MHz" } }
+            {
+              "id": "name_ch1",
+              "type": "text",
+              "label": {
+                "en": "Channel 1 name"
+              },
+              "value": "Channel 1"
+            },
+            {
+              "id": "frequency_ch1",
+              "type": "number",
+              "label": {
+                "en": "Channel 1 frequency"
+              },
+              "value": 100,
+              "min": 87.5,
+              "max": 108,
+              "step": 0.05,
+              "units": {
+                "en": "MHz"
+              }
+            },
+            {
+              "id": "name_ch2",
+              "type": "text",
+              "label": {
+                "en": "Channel 2 name"
+              },
+              "value": "Channel 2"
+            },
+            {
+              "id": "frequency_ch2",
+              "type": "number",
+              "label": {
+                "en": "Channel 2 frequency"
+              },
+              "value": 100,
+              "min": 87.5,
+              "max": 108,
+              "step": 0.05,
+              "units": {
+                "en": "MHz"
+              }
+            },
+            {
+              "id": "name_ch3",
+              "type": "text",
+              "label": {
+                "en": "Channel 3 name"
+              },
+              "value": "Channel 3"
+            },
+            {
+              "id": "frequency_ch3",
+              "type": "number",
+              "label": {
+                "en": "Channel 3 frequency"
+              },
+              "value": 100,
+              "min": 87.5,
+              "max": 108,
+              "step": 0.05,
+              "units": {
+                "en": "MHz"
+              }
+            },
+            {
+              "id": "name_ch4",
+              "type": "text",
+              "label": {
+                "en": "Channel 4 name"
+              },
+              "value": "Channel 4"
+            },
+            {
+              "id": "frequency_ch4",
+              "type": "number",
+              "label": {
+                "en": "Channel 4 frequency"
+              },
+              "value": 100,
+              "min": 87.5,
+              "max": 108,
+              "step": 0.05,
+              "units": {
+                "en": "MHz"
+              }
+            },
+            {
+              "id": "name_ch5",
+              "type": "text",
+              "label": {
+                "en": "Channel 5 name"
+              },
+              "value": "Channel 5"
+            },
+            {
+              "id": "frequency_ch5",
+              "type": "number",
+              "label": {
+                "en": "Channel 5 frequency"
+              },
+              "value": 100,
+              "min": 87.5,
+              "max": 108,
+              "step": 0.05,
+              "units": {
+                "en": "MHz"
+              }
+            }
           ]
         }
-      ],
-      "platforms": [
-        "local"
-      ],
-      "connectivity": [
-        "lan"
-      ],
-      "images": {
-        "small": "/drivers/wakeup-light/assets/images/small.png",
-        "large": "/drivers/wakeup-light/assets/images/large.png",
-        "xlarge": "/drivers/wakeup-light/assets/images/xlarge.png"
-      },
-      "discovery": "SSDP",
-      "pair": [
-        {
-          "id": "list_devices",
-          "template": "list_devices",
-          "options": {
-            "singular": true
-          },
-          "navigation": {
-            "next": "add_devices"
-          }
-        },
-        {
-          "id": "add_devices",
-          "template": "add_devices"
-        }
-      ],
-      "repair": [
-        {
-          "id": "alarms"
-        }
-      ],
-      "id": "wakeup-light"
+      ]
     }
   ],
   "capabilities": {
-    "media_input": {
-      "type": "enum",
-      "title": {
-        "en": "Source"
-      },
-      "getable": true,
-      "setable": true,
-      "uiComponent": "picker",
-      "values": [
-        { "id": "fmr", "title": { "en": "FM Radio" } },
-        { "id": "aux", "title": { "en": "AUX" } }
-      ]
-    },
     "bedtime_tracking": {
       "type": "boolean",
       "title": {
@@ -637,17 +834,40 @@
       "uiComponent": "button",
       "uiQuickAction": true
     },
-    "sunrise_preview": {
+    "media_input": {
+      "type": "enum",
+      "title": {
+        "en": "Source"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "picker",
+      "values": [
+        {
+          "id": "fmr",
+          "title": {
+            "en": "FM Radio"
+          }
+        },
+        {
+          "id": "aux",
+          "title": {
+            "en": "AUX"
+          }
+        }
+      ]
+    },
+    "nightlight": {
       "type": "boolean",
       "title": {
-        "en": "Sunrise Preview"
+        "en": "Night Light"
       },
       "insights": true,
       "insightsTitleTrue": {
-        "en": "The sunrise preview was activated"
+        "en": "The nightlight was turned on"
       },
       "insightsTitleFalse": {
-        "en": "The sunrise preview was deactivated"
+        "en": "The nightlight was turned off"
       },
       "getable": true,
       "setable": true,
@@ -671,17 +891,17 @@
       "uiComponent": "button",
       "uiQuickAction": true
     },
-    "nightlight": {
+    "sunrise_preview": {
       "type": "boolean",
       "title": {
-        "en": "Night Light"
+        "en": "Sunrise Preview"
       },
       "insights": true,
       "insightsTitleTrue": {
-        "en": "The nightlight was turned on"
+        "en": "The sunrise preview was activated"
       },
       "insightsTitleFalse": {
-        "en": "The nightlight was turned off"
+        "en": "The sunrise preview was deactivated"
       },
       "getable": true,
       "setable": true,

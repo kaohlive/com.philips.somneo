@@ -15,6 +15,9 @@
     "en": "Added flow card support for the sunset and nightlight options"
   },
   "2.0.0": {
-    "en": "Major update: sleep tracking, an 'alarm goes off' trigger, real sunset with a separate sunrise preview, relax breathe, display and FM/AUX audio control, and alarm management via the device's repair screen. Note: the sunset button now performs an actual sunset; its previous behaviour is now the new Sunrise Preview. The app is also much gentler on the device, with throttled requests and configurable polling."
+    "en": "Major update: sleep tracking, an 'alarm goes off' trigger, real sunset with a separate sunrise preview, relax breathe, display and FM/AUX audio control. Note: the sunset button now performs an actual sunset; its previous behaviour is now the new Sunrise Preview. The app is also much gentler on the device, with throttled requests and configurable polling."
+  },
+  "2.0.1": {
+    "en": "Manage your device's alarms (view, create, edit, enable and delete) from the new screen under the device's Repair option. Also more robust against devices that return incomplete data."
   }
 }
