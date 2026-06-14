@@ -25,5 +25,8 @@
   },
   "2.0.3": {
     "en": "Detects when the device becomes unreachable and marks it unavailable, so it greys out and Homey's built-in availability flow cards work for it. Also fixes alarm detection staying disabled after a temporary outage."
+  },
+  "2.0.4": {
+    "en": "Connectivity is now also reported through the standard connectivity-alarm capability, giving a connectivity indicator on the device, Insights logging and the built-in connectivity flow cards."
   }
 }

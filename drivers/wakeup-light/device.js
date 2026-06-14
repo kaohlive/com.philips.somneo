@@ -48,6 +48,10 @@ class WakeupLightDevice extends Device {
       await this.addCapability('speaker_prev');
     if(!this.hasCapability('speaker_track'))
       await this.addCapability('speaker_track');
+    if(!this.hasCapability('alarm_connectivity'))
+      await this.addCapability('alarm_connectivity');
+    if(this.getCapabilityValue('alarm_connectivity') === null)
+      this._set('alarm_connectivity', false);
 
     this.registerCapabilityListener('onoff', this.onCapabilityOnoff.bind(this));
     this.registerCapabilityListener('dim', this.onCapabilityDim.bind(this));
@@ -121,6 +125,7 @@ class WakeupLightDevice extends Device {
         this._consecutiveFailures = 0;
         this._eventFailures = 0;
         this._pollBaseInterval = this._pollConfiguredInterval || 15000;
+        this._set('alarm_connectivity', false);
         if(!this.getAvailable())
           this.setAvailable().catch(() => {});
       }
@@ -128,6 +133,7 @@ class WakeupLightDevice extends Device {
     }
     this._consecutiveFailures = (this._consecutiveFailures || 0) + 1;
     if(this._consecutiveFailures >= 3) {
+      this._set('alarm_connectivity', true);
       if(this.getAvailable())
         this.setUnavailable('Device unreachable').catch(() => {});
       this._pollBaseInterval = Math.min(this._pollBaseInterval * 2, 120000);
