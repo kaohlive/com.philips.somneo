@@ -1,0 +1,305 @@
+<style>
+  :root {
+    --brand: #E8820C;
+    --brand-dark: #C96A00;
+    --border: #e0e0e0;
+    --bg: #f7f7f7;
+    --surface: #ffffff;
+    --surface-2: #faf3ea;
+    --fg: #1a1a1a;
+    --fg-soft: #555;
+    --muted: #888;
+    --pill-bg: #efefef;
+    --error-bg: #ffebee;
+    --error-fg: #C62828;
+    --ok-bg: #e8f5e9;
+    --ok-fg: #2E7D32;
+    --info-bg: #e3f2fd;
+    --info-fg: #1565C0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --brand: #FFB74D;
+      --brand-dark: #FFA726;
+      --border: #3a3a3a;
+      --bg: #1a1a1a;
+      --surface: #262626;
+      --surface-2: #2b2620;
+      --fg: #e8e8e8;
+      --fg-soft: #b0b0b0;
+      --muted: #888;
+      --pill-bg: #333333;
+      --error-bg: #3d1f22;
+      --error-fg: #ef9a9a;
+      --ok-bg: #1f3324;
+      --ok-fg: #81c784;
+      --info-bg: #1a3045;
+      --info-fg: #79b6f0;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  .somneo {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    color: var(--fg);
+    background: var(--bg);
+    padding: 12px 8px 24px;
+  }
+
+  .header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .header .logo { flex: 0 0 36px; width: 36px; height: 36px; color: var(--brand); }
+  .header h1 { font-size: 17px; margin: 0; color: var(--brand); font-weight: 700; }
+  .header .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .toolbar { display: flex; gap: 8px; margin: 14px 0 10px; }
+  .toolbar .spacer { flex: 1; }
+
+  button {
+    font-family: inherit; font-size: 13px; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; background: var(--surface); color: var(--fg);
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.primary { background: var(--brand); border-color: var(--brand-dark); color: #fff; font-weight: 600; }
+  button.danger { color: var(--error-fg); }
+
+  .status { border-radius: 8px; padding: 9px 12px; font-size: 13px; margin-bottom: 10px; }
+  .status.hidden { display: none; }
+  .status.info { background: var(--info-bg); color: var(--info-fg); }
+  .status.ok { background: var(--ok-bg); color: var(--ok-fg); }
+  .status.error { background: var(--error-bg); color: var(--error-fg); }
+
+  .alarm-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; margin-bottom: 10px;
+  }
+  .alarm-card.unsaved { border-color: var(--brand); }
+  .alarm-row { display: flex; align-items: center; gap: 12px; }
+  .alarm-row + .alarm-row { margin-top: 10px; }
+
+  input[type="time"] {
+    font-family: inherit; font-size: 22px; font-weight: 600;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 10px; background: var(--surface-2); color: var(--fg);
+  }
+
+  .switch { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--fg-soft); margin-left: auto; }
+  .switch input { width: 18px; height: 18px; accent-color: var(--brand); }
+
+  .days { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .days button {
+    width: 38px; padding: 7px 0; text-align: center; border-radius: 999px;
+    background: var(--pill-bg); border: 1px solid transparent; color: var(--fg-soft);
+  }
+  .days button.active { background: var(--brand); color: #fff; font-weight: 600; }
+
+  .footer { margin-top: 12px; }
+  .footer .pw { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--fg-soft); }
+  .footer .pw input { width: 16px; height: 16px; accent-color: var(--brand); }
+  .footer .actions { display: flex; gap: 8px; margin-left: auto; }
+
+  .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 24px 0; }
+</style>
+
+<div class="somneo">
+  <div class="header">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+    </svg>
+    <div>
+      <h1>Somneo alarms</h1>
+      <div class="subtitle">View, edit and create the wake-up alarms on your device</div>
+    </div>
+  </div>
+
+  <div id="status" class="status hidden"></div>
+
+  <div class="toolbar">
+    <button id="add" class="primary">+ Add alarm</button>
+    <div class="spacer"></div>
+    <button id="reload">Reload</button>
+    <button id="close">Close</button>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+  (function () {
+    var DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    var DAY_LABELS = { mon: 'Mo', tue: 'Tu', wed: 'We', thu: 'Th', fri: 'Fr', sat: 'Sa', sun: 'Su' };
+
+    function $(id) { return document.getElementById(id); }
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+    function setStatus(msg, kind) {
+      var el = $('status');
+      el.className = 'status ' + (kind || 'info');
+      el.textContent = msg;
+    }
+    function hideStatus() { $('status').className = 'status hidden'; }
+
+    function buildCard(alarm) {
+      var card = document.createElement('div');
+      card.className = 'alarm-card' + (alarm.id ? '' : ' unsaved');
+      if (alarm.id) card.setAttribute('data-id', alarm.id);
+
+      var time = document.createElement('input');
+      time.type = 'time';
+      time.className = 'time';
+      time.value = pad2(alarm.hour) + ':' + pad2(alarm.minute);
+
+      var enableLabel = document.createElement('label');
+      enableLabel.className = 'switch';
+      var enable = document.createElement('input');
+      enable.type = 'checkbox';
+      enable.className = 'enabled';
+      enable.checked = alarm.enabled !== false;
+      enableLabel.appendChild(enable);
+      enableLabel.appendChild(document.createTextNode('Enabled'));
+
+      var row1 = document.createElement('div');
+      row1.className = 'alarm-row';
+      row1.appendChild(time);
+      row1.appendChild(enableLabel);
+
+      var days = document.createElement('div');
+      days.className = 'days';
+      DAY_KEYS.forEach(function (key) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('data-day', key);
+        b.textContent = DAY_LABELS[key];
+        if (alarm.days && alarm.days[key]) b.className = 'active';
+        b.addEventListener('click', function () { b.classList.toggle('active'); });
+        days.appendChild(b);
+      });
+
+      var pwLabel = document.createElement('label');
+      pwLabel.className = 'pw';
+      var pw = document.createElement('input');
+      pw.type = 'checkbox';
+      pw.className = 'powerwake';
+      pw.checked = !!alarm.powerWake;
+      pwLabel.appendChild(pw);
+      pwLabel.appendChild(document.createTextNode('PowerWake'));
+
+      var actions = document.createElement('div');
+      actions.className = 'actions';
+      var save = document.createElement('button');
+      save.className = 'primary';
+      save.textContent = 'Save';
+      var del = document.createElement('button');
+      del.className = 'danger';
+      del.textContent = 'Delete';
+      actions.appendChild(save);
+      actions.appendChild(del);
+
+      var row2 = document.createElement('div');
+      row2.className = 'alarm-row footer';
+      row2.appendChild(pwLabel);
+      row2.appendChild(actions);
+
+      card.appendChild(row1);
+      card.appendChild(days);
+      card.appendChild(row2);
+
+      function gather() {
+        var parts = time.value.split(':');
+        var dayState = {};
+        days.querySelectorAll('button').forEach(function (b) {
+          dayState[b.getAttribute('data-day')] = b.classList.contains('active');
+        });
+        var id = card.getAttribute('data-id');
+        return {
+          id: id ? Number(id) : null,
+          hour: Number(parts[0]),
+          minute: Number(parts[1]),
+          enabled: enable.checked,
+          powerWake: pw.checked,
+          days: dayState
+        };
+      }
+
+      enable.addEventListener('change', function () {
+        var id = card.getAttribute('data-id');
+        if (!id) return; // new, unsaved alarm: applied on Save
+        enable.disabled = true;
+        Homey.emit('toggle-alarm', { id: Number(id), enabled: enable.checked })
+          .then(function () { setStatus('Alarm ' + (enable.checked ? 'enabled' : 'disabled'), 'ok'); })
+          .catch(function (err) { enable.checked = !enable.checked; setStatus(errMsg(err), 'error'); })
+          .then(function () { enable.disabled = false; });
+      });
+
+      save.addEventListener('click', function () {
+        save.disabled = true;
+        save.textContent = 'Saving...';
+        Homey.emit('save-alarm', gather())
+          .then(function (res) {
+            if (res && res.id) {
+              card.setAttribute('data-id', res.id);
+              card.classList.remove('unsaved');
+            }
+            setStatus('Alarm saved', 'ok');
+          })
+          .catch(function (err) { setStatus(errMsg(err), 'error'); })
+          .then(function () { save.disabled = false; save.textContent = 'Save'; });
+      });
+
+      del.addEventListener('click', function () {
+        var id = card.getAttribute('data-id');
+        if (!id) { card.parentNode.removeChild(card); return; }
+        del.disabled = true;
+        Homey.emit('delete-alarm', { id: Number(id) })
+          .then(function () { card.parentNode.removeChild(card); setStatus('Alarm deleted', 'ok'); checkEmpty(); })
+          .catch(function (err) { del.disabled = false; setStatus(errMsg(err), 'error'); });
+      });
+
+      return card;
+    }
+
+    function errMsg(err) { return (err && err.message) ? err.message : String(err); }
+
+    function checkEmpty() {
+      var list = $('list');
+      if (list.querySelectorAll('.alarm-card').length === 0) {
+        list.innerHTML = '<div class="empty">No alarms on this device yet. Use “Add alarm” to create one.</div>';
+      }
+    }
+
+    function render(alarms) {
+      var list = $('list');
+      list.innerHTML = '';
+      (alarms || []).forEach(function (a) { list.appendChild(buildCard(a)); });
+      checkEmpty();
+    }
+
+    function load() {
+      setStatus('Reading alarms from the device...', 'info');
+      Homey.emit('get-alarms', null)
+        .then(function (res) {
+          render(res && res.alarms);
+          setStatus('Loaded ' + ((res && res.alarms ? res.alarms.length : 0)) + ' alarm(s)', 'ok');
+          setTimeout(hideStatus, 1500);
+        })
+        .catch(function (err) { setStatus(errMsg(err), 'error'); });
+    }
+
+    $('add').addEventListener('click', function () {
+      var empty = $('list').querySelector('.empty');
+      if (empty) $('list').innerHTML = '';
+      var card = buildCard({ hour: 7, minute: 0, enabled: true, powerWake: false,
+        days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: false, sun: false } });
+      $('list').appendChild(card);
+    });
+
+    $('reload').addEventListener('click', load);
+    $('close').addEventListener('click', function () { Homey.done(); });
+
+    load();
+    if (typeof Homey.ready === 'function') Homey.ready();
+  })();
+</script>

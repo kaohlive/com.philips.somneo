@@ -290,6 +290,16 @@ async function getLastEvent(address)
   });
 }
 
+async function putAlarm(address,body)
+{
+  console.info('Updating Alarm')
+  return new Promise((resolve, reject) => {(
+    putResponseData(address,'wualm/prfwu', body)).then(data => {
+      resolve(data);
+    }).catch(e => {reject(e)});
+  });
+}
+
 module.exports.putMainLightState = putMainLightState;
 module.exports.getRelaxBreatheSettings = getRelaxBreatheSettings;
 module.exports.putRelaxBreatheSettings = putRelaxBreatheSettings;
@@ -306,6 +316,7 @@ module.exports.putBedtimeTracking = putBedtimeTracking;
 module.exports.getLastEvent = getLastEvent;
 module.exports.getAlarmSchedules = getAlarmSchedules;
 module.exports.getAlarmState = getAlarmState;
+module.exports.putAlarm = putAlarm;
 module.exports.getTimersState = getTimersState;
 module.exports.getSensors = getSensors;
 module.exports.getMainLightState = getMainLightState;

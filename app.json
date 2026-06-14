@@ -598,6 +598,11 @@
           "template": "add_devices"
         }
       ],
+      "repair": [
+        {
+          "id": "alarms"
+        }
+      ],
       "id": "wakeup-light"
     }
   ],
