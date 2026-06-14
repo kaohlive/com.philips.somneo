@@ -117,16 +117,6 @@ async function putMainLightState(address,mainlight,dim,sunrise,nightlight)
   });  
 }
 
-async function getTimersState(address)
-{
-  console.info('Retrieving Timers data')
-  return new Promise((resolve, reject) => {(
-    getResponseData(address,'wutmr')).then(data => {
-      resolve(data);
-    }).catch(e => {reject(e)});
-  });  
-}
-
 async function getAlarmState(address)
 {
   console.info('Retrieving Alarm data')
@@ -317,6 +307,5 @@ module.exports.getLastEvent = getLastEvent;
 module.exports.getAlarmSchedules = getAlarmSchedules;
 module.exports.getAlarmState = getAlarmState;
 module.exports.putAlarm = putAlarm;
-module.exports.getTimersState = getTimersState;
 module.exports.getSensors = getSensors;
 module.exports.getMainLightState = getMainLightState;

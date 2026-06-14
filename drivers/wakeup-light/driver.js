@@ -77,7 +77,7 @@ class WakeupLightDriver extends Driver {
     if(includeAny)
       results.push({ id: 'any', name: 'Any alarm' });
     try {
-      const alarms = await this._buildAlarms(args.device.getStoreValue('address'));
+      const alarms = await this._cachedAlarms(args.device.getStoreValue('address'));
       alarms.forEach((a) => {
         results.push({
           id: String(a.id),
@@ -173,6 +173,20 @@ class WakeupLightDriver extends Driver {
       await somneoapi.putAlarm(address(), { prfnr: alarm.id, prfvs: false });
       return { ok: true };
     });
+  }
+
+  //Short-lived cache for the autocomplete: it is called per keystroke while picking an alarm,
+  //and we don't want two device reads each time. Live cards (conditions) use _buildAlarms directly.
+  async _cachedAlarms(address) {
+    if(!this._alarmCache)
+      this._alarmCache = {};
+    const entry = this._alarmCache[address];
+    const now = Date.now();
+    if(entry && (now - entry.time) < 10000)
+      return entry.alarms;
+    const alarms = await this._buildAlarms(address);
+    this._alarmCache[address] = { time: now, alarms };
+    return alarms;
   }
 
   //Reads the used alarms from the device (shared by the repair UI and the flow autocompletes)

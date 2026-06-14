@@ -194,14 +194,6 @@ class WakeupLightDevice extends Device {
     return new Promise(resolve => { this._pollTimeout = setTimeout(resolve, ms); });
   }
 
-  async refreshState()
-  {
-    //Expand this with the update methods of the other features of the device
-    //this.updateAlarmState();
-    //this.updateAlarmSchedules();
-    //this.updateTimerState();
-  }
-
   async onAdded() {
     this.log('Wakeup-Light: '+this.getName()+' - Device has been added');
   }
@@ -690,33 +682,6 @@ class WakeupLightDevice extends Device {
       case 'go2bed': this._setBedtimeState(true); break;
       case 'endbed': this._setBedtimeState(false); break;
     }
-  }
-
-  async updateTimerState()
-  {
-    somneoapi.getTimersState(this.getStoreValue('address')).then(timerstatedata => {
-      this.log(JSON.stringify(timerstatedata))
-    }).catch(e => { 
-      this.log('Error on retrieving Timer status: '+e);
-    });
-  }
-
-  async updateAlarmState()
-  {
-    somneoapi.getAlarmState(this.getStoreValue('address')).then(alarmstatedata => {
-      this.log(JSON.stringify(alarmstatedata))
-    }).catch(e => { 
-      this.log('Error on retrieving Alarm status: '+e);
-    });
-  }
-
-  async updateAlarmSchedules()
-  {
-    somneoapi.getAlarmSchedules(this.getStoreValue('address')).then(alarmscheduledata => {
-      this.log(JSON.stringify(alarmscheduledata))
-    }).catch(e => { 
-      this.log('Error on retrieving Alarm schedules: '+e);
-    });
   }
 
   async onSettings({ oldSettings, newSettings, changedKeys }) {

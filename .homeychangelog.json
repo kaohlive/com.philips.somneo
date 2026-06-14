@@ -46,5 +46,8 @@
   },
   "2.0.10": {
     "en": "Added flow triggers for sleep tracking turning on/off and for the audio source changing (with the new source as a tag)."
+  },
+  "2.0.11": {
+    "en": "The alarm list is briefly cached while you pick it in a flow card, so configuring alarm flows no longer reads the device on every keystroke. Removed unused code."
   }
 }
